@@ -99,6 +99,12 @@ public final class ControlSmartWatch2 extends ControlExtension {
     Bundle[] mMenuItemsText = new Bundle[3];
     Bundle[] mMenuItemsIcons = new Bundle[3];
     boolean isRegistered = false;
+    
+    //Previous song, mediaplayer state and cover. Used to detect what is changed on update
+    Song pSong = null;
+	Bitmap pCover = null;
+	int pState = 0;
+    
 
     /**
      * Create sample control.
@@ -246,6 +252,11 @@ public final class ControlSmartWatch2 extends ControlExtension {
 	        data[2] = b3;
 	        data[3] = b4;
 	        data[4] = b5;
+	        
+	        //Updating pre-variables
+	        pSong = song;
+	        pState = state;
+	        pCover = cover;
 		}
 
 		showLayout(R.layout.sw_control_2, data);
@@ -265,12 +276,14 @@ public final class ControlSmartWatch2 extends ControlExtension {
 		Bitmap cover = null;
 		int shuffle = 0;
 		int finish = 0;
+		int state = 0;
 		
+		//Firstly, we getting current state from PlaybackService
 		if (PlaybackService.hasInstance()) {
 			PlaybackService service = PlaybackService.get(mContext);
 			song = service.getSong(0);
 			cover = song.getCover(mContext);
-			int state = service.getState();
+			state = service.getState();
 			shuffle = PlaybackService.shuffleMode(state);
 			finish = PlaybackService.finishAction(state);
 			Log.d(SWExtensionService.LOG_TAG, "State = " + Integer.toString(state));
@@ -279,25 +292,55 @@ public final class ControlSmartWatch2 extends ControlExtension {
 			mCurrentIsPlaying = (state & PlaybackService.FLAG_PLAYING) != 0;
 		}
 		
-		//TODO: Need to check is cover changed because resending it is not a good idea because of speed.
-		if (cover != null) {
-			sendImage(R.id.album_cover, cover);
-		} else {
-			sendImage(R.id.album_cover, R.drawable.fallback_cover);
+		//Check if cover is updated
+		if (pCover != cover) {
+			if (cover != null) {
+				sendImage(R.id.album_cover, cover);
+			} else {
+				sendImage(R.id.album_cover, R.drawable.fallback_cover);
+			}
 		}
 		
-		//TODO: And better check exactly what is changed to update exactly what is changed
-		if (mCurrentIsPlaying) {
-			sendImage(R.id.play, R.drawable.sw_pause);
-		} else {
-			sendImage(R.id.play, R.drawable.sw_play);
+		//Globally check is whole state changed
+		if (pState != state) {
+			//Check if playing status changed
+			boolean pPlaying = (pState & PlaybackService.FLAG_PLAYING) != 0;
+			if (pPlaying != mCurrentIsPlaying) {
+				if (mCurrentIsPlaying) {
+					sendImage(R.id.play, R.drawable.sw_pause);
+				} else {
+					sendImage(R.id.play, R.drawable.sw_play);
+				}
+			}
+			
+			//Check if shuffle state changed
+			int pShuffle = PlaybackService.shuffleMode(pState);
+			if (pShuffle != shuffle) {
+				sendImage(R.id.sw_shuffle, SHUFFLE_ICONS[shuffle]);
+			}
+			
+			//Check if finish action changed
+			int pFinish = PlaybackService.finishAction(pState);
+			if (pFinish != finish) {
+				sendImage(R.id.sw_repeat, FINISH_ICONS[finish]);
+			}
 		}
-				
-		sendImage(R.id.sw_shuffle, SHUFFLE_ICONS[shuffle]);
-		sendImage(R.id.sw_repeat, FINISH_ICONS[finish]);
 		
-    	sendText(R.id.artist, song.artist);
-		sendText(R.id.track, song.title);
+		//Song is a big object so we cheching artist/title individually
+		//Check if artist changed
+		if (pSong.artist != song.artist) {
+	    	sendText(R.id.artist, song.artist);
+		}
+		
+		//Check if title changed
+		if (pSong.title != song.title) {
+			sendText(R.id.track, song.title);
+		}
+		
+        //Updating pre-variables
+        pSong = song;
+        pState = state;
+        pCover = cover;
     }
 
     @Override
