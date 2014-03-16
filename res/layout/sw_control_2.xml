@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="@dimen/smart_watch_2_control_width"
+    android:layout_height="@dimen/smart_watch_2_control_height"
+    android:background="@drawable/background"
+    tools:ignore="ContentDescription,PxUsage" >
+    
+<!--     Cover image shold be first because it underlying under other elements -->
+    <ImageView
+        android:id="@+id/album_cover"
+        android:layout_width="164px"
+        android:layout_height="164px"
+        android:layout_centerHorizontal="true"
+        android:layout_centerVertical="true"/>
+
+    <ImageView
+        android:id="@+id/next"
+        android:layout_width="44px"
+        android:layout_height="44px"
+        android:layout_alignTop="@+id/play"
+        android:layout_toRightOf="@+id/play"
+        android:clickable="true"
+        android:src="@drawable/sw_next" />
+
+    <TextView
+        android:id="@+id/artist"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignTop="@+id/album_cover"
+        android:layout_centerHorizontal="true"
+        android:gravity="center"
+        android:shadowColor="@color/smart_watch_2_text_color_white"
+        android:shadowRadius="3"
+        android:text="artist"
+        android:textColor="@android:color/black"
+        android:textSize="@dimen/smart_watch_2_text_size_medium" />
+
+    <TextView
+        android:id="@+id/track"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/artist"
+        android:layout_centerHorizontal="true"
+        android:gravity="center"
+        android:shadowColor="@color/smart_watch_2_text_color_white"
+        android:shadowRadius="3"
+        android:text="title"
+        android:textColor="@android:color/black"
+        android:textSize="@dimen/smart_watch_2_text_size_medium" />
+
+    <ImageView
+        android:id="@+id/back"
+        android:layout_width="44px"
+        android:layout_height="44px"
+        android:layout_alignTop="@+id/play"
+        android:layout_toLeftOf="@+id/play"
+        android:clickable="true"
+        android:src="@drawable/sw_back" />
+
+    <ImageView
+        android:id="@+id/play"
+        android:layout_width="44px"
+        android:layout_height="44px"
+        android:layout_alignBottom="@+id/album_cover"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="10px"
+        android:clickable="true"/>
+
+    <ImageView
+        android:id="@+id/sw_repeat"
+        android:layout_width="44px"
+        android:layout_height="44px"
+        android:layout_alignParentRight="true"
+        android:layout_alignTop="@+id/next"
+        android:clickable="true"/>
+
+    <ImageView
+        android:id="@+id/sw_shuffle"
+        android:layout_width="44px"
+        android:layout_height="44px"
+        android:layout_alignParentLeft="true"
+        android:layout_alignTop="@+id/back"
+        android:clickable="true"/>
+
+</RelativeLayout>
