@@ -38,6 +38,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CursorAdapter;
 import android.widget.TextView;
+import su.thinkdifferent.vanilla.R;
 
 /**
  * CursorAdapter backed by MediaStore playlists.

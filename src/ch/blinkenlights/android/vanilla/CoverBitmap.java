@@ -34,6 +34,7 @@ import android.graphics.RectF;
 import android.graphics.Shader;
 import android.util.DisplayMetrics;
 import android.util.TypedValue;
+import su.thinkdifferent.vanilla.R;
 
 /**
  * Class containing utility functions to create Bitmaps display song info and

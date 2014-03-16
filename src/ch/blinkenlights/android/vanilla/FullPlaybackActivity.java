@@ -45,6 +45,7 @@ import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
 import android.widget.Toast;
+import su.thinkdifferent.vanilla.R;
 
 /**
  * The primary playback screen with playback controls and large cover display.

@@ -33,6 +33,7 @@ import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
+import su.thinkdifferent.vanilla.R;
 
 /**
  * Simple dialog to prompt to user to enter a playlist name. Has an EditText to

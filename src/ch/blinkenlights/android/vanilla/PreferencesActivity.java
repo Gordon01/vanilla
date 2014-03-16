@@ -40,6 +40,7 @@ import android.view.ViewGroup;
 import android.webkit.WebView;
 import android.webkit.WebViewFragment;
 import java.util.List;
+import su.thinkdifferent.vanilla.R;
 
 /**
  * The preferences activity in which one can change application preferences.

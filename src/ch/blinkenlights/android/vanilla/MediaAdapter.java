@@ -42,6 +42,7 @@ import android.widget.LinearLayout;
 import android.widget.SectionIndexer;
 import android.widget.TextView;
 import java.util.regex.Pattern;
+import su.thinkdifferent.vanilla.R;
 
 /**
  * MediaAdapter provides an adapter backed by a MediaStore content provider.

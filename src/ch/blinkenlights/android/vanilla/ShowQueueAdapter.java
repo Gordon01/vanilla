@@ -31,6 +31,7 @@ import android.text.SpannableStringBuilder;
 import android.text.style.ForegroundColorSpan;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
+import su.thinkdifferent.vanilla.R;
 
 public class ShowQueueAdapter extends ArrayAdapter<Song> {
 	

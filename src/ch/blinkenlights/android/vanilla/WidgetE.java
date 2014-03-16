@@ -30,6 +30,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.view.View;
 import android.widget.RemoteViews;
+import su.thinkdifferent.vanilla.R;
 
 /**
  * 4x1 widget with many playback controls

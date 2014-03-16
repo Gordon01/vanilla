@@ -31,6 +31,7 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.view.View;
 import android.widget.RemoteViews;
+import su.thinkdifferent.vanilla.R;
 
 /**
  * 2x2 widget that shows cover art in the background and playback controls in

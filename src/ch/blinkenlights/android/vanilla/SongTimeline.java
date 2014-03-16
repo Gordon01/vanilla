@@ -36,6 +36,7 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.ListIterator;
 import junit.framework.Assert;
+import su.thinkdifferent.vanilla.R;
 
 /**
  * Contains the list of currently playing songs, implements repeat and shuffle

@@ -21,7 +21,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 -->
 <resources>
-	<string name="app_name">Vanilla Music</string>
+	<string name="app_name">SmartVanilla Music</string>
 
 	<!-- Playback Activity (main screen) -->
 	<string name="no_songs">No songs found on your device.</string>
@@ -256,4 +256,19 @@ THE SOFTWARE.
 	<string name="filebrowser_start">Filebrowser home</string>
 	<string name="customize_filebrowser_start">Filebrowser starts at this directory</string>
 	<string name="select">Select</string>
+	
+	<!-- Strings for LiveWare Extension: -->
+    <!-- Title of preference activity -->
+    <string name="preference_activity_title">SmartVanilla Music settings</string>
+    <!-- Name of extension, shown in preferences -->
+    <string name="extension_name">SmartVanilla Music</string>
+    <!-- Configuration title shown in preferences -->
+    <string name="configuration_text">SmartVanilla Music settings</string>
+    <!-- Menu option shown in preferences -->
+    <string name="preference_option_read_me">READ ME</string>
+    <!-- Read me text shown in dialog -->
+    <string name="preference_option_read_me_txt">Swipe up or right to increase volume; down or left to decrease</string>
+
+    <!-- Text drawn in control on Smart Wireless Headset pro-->
+    <string name="sample_control_headset_pro_text">Press Prev or Next</string>
 </resources>

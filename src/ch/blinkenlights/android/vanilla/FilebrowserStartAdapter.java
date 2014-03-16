@@ -25,6 +25,7 @@ import android.widget.ArrayAdapter;
 import android.view.LayoutInflater;
 import android.widget.TextView;
 import android.graphics.drawable.Drawable;
+import su.thinkdifferent.vanilla.R;
 
 
 public class FilebrowserStartAdapter extends ArrayAdapter<String> {

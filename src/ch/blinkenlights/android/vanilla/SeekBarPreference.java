@@ -29,6 +29,7 @@ import android.util.AttributeSet;
 import android.view.View;
 import android.widget.SeekBar;
 import android.widget.TextView;
+import su.thinkdifferent.vanilla.R;
 
 /**
  * SeekBar preference to set the shake force threshold.

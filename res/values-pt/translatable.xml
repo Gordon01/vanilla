@@ -46,6 +46,7 @@
   <string name="done">Concluído</string>
   <string name="remove">Remover</string>
   <string name="clear_search">Apagar procura</string>
+  <string name="play_or_enqueue">Colocar na fila ou reproduzir se parado</string>
   <string name="deleted">%s eliminada</string>
   <string name="delete_file_failed">Falha ao eliminar %s</string>
   <string name="artists">Artistas</string>
@@ -76,6 +77,8 @@
   <string name="volume_title">Volume</string>
   <string name="media_button_title">Auscultador/Bluetooth</string>
   <string name="media_button_summary">Também é necessário pelo ecrã de bloqueio do ICS</string>
+  <string name="media_button_beep_title">Som do auscultador</string>
+  <string name="media_button_beep_summary">Tocar som ao ignorar uma faixa com o duplo clique no auscultador</string>
   <string name="headset_only_title">Só saída externa</string>
   <string name="headset_only_summary">Impede que a música seja reproduzida pelo altifalante interno</string>
   <string name="headset_pause_title">Pausar ao retirar</string>

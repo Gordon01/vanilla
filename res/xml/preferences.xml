@@ -24,43 +24,43 @@ THE SOFTWARE.
 	<PreferenceScreen
 		android:title="@string/audio">
 		<intent
-			android:targetPackage="ch.blinkenlights.android.vanilla"
+			android:targetPackage="su.thinkdifferent.vanilla"
 			android:targetClass="ch.blinkenlights.android.vanilla.PreferencesActivity$AudioActivity" />
 	</PreferenceScreen>
 	<PreferenceScreen
 		android:title="@string/playback_screen">
 		<intent
-			android:targetPackage="ch.blinkenlights.android.vanilla"
+			android:targetPackage="su.thinkdifferent.vanilla"
 			android:targetClass="ch.blinkenlights.android.vanilla.PreferencesActivity$PlaybackActivity" />
 	</PreferenceScreen>
 	<PreferenceScreen
 		android:title="@string/library_screen">
 		<intent
-			android:targetPackage="ch.blinkenlights.android.vanilla"
+			android:targetPackage="su.thinkdifferent.vanilla"
 			android:targetClass="ch.blinkenlights.android.vanilla.PreferencesActivity$LibraryActivity" />
 	</PreferenceScreen>
 	<PreferenceScreen
 		android:title="@string/notifications">
 		<intent
-			android:targetPackage="ch.blinkenlights.android.vanilla"
+			android:targetPackage="su.thinkdifferent.vanilla"
 			android:targetClass="ch.blinkenlights.android.vanilla.PreferencesActivity$NotificationsActivity" />
 	</PreferenceScreen>
 	<PreferenceScreen
 		android:title="@string/accelerometer_shake">
 		<intent
-			android:targetPackage="ch.blinkenlights.android.vanilla"
+			android:targetPackage="su.thinkdifferent.vanilla"
 			android:targetClass="ch.blinkenlights.android.vanilla.PreferencesActivity$ShakeActivity" />
 	</PreferenceScreen>
 	<PreferenceScreen
 		android:title="@string/misc_features">
 		<intent
-			android:targetPackage="ch.blinkenlights.android.vanilla"
+			android:targetPackage="su.thinkdifferent.vanilla"
 			android:targetClass="ch.blinkenlights.android.vanilla.PreferencesActivity$MiscActivity" />
 	</PreferenceScreen>
 	<PreferenceScreen
 		android:title="@string/about">
 		<intent
-			android:targetPackage="ch.blinkenlights.android.vanilla"
+			android:targetPackage="su.thinkdifferent.vanilla"
 			android:targetClass="ch.blinkenlights.android.vanilla.PreferencesActivity$AboutActivity" />
 	</PreferenceScreen>
 </PreferenceScreen>

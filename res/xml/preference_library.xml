@@ -32,7 +32,7 @@ THE SOFTWARE.
 		android:title="@string/tabs"
 		android:summary="@string/customize_tab_order">
 		<intent
-			android:targetPackage="ch.blinkenlights.android.vanilla"
+			android:targetPackage="su.thinkdifferent.vanilla"
 			android:targetClass="ch.blinkenlights.android.vanilla.TabOrderActivity" />
 	</PreferenceScreen>
 	<ch.blinkenlights.android.vanilla.ListPreferenceSummary
@@ -51,7 +51,7 @@ THE SOFTWARE.
 		android:title="@string/filebrowser_start"
 		android:summary="@string/customize_filebrowser_start">
 		<intent
-			android:targetPackage="ch.blinkenlights.android.vanilla"
+			android:targetPackage="su.thinkdifferent.vanilla"
 			android:targetClass="ch.blinkenlights.android.vanilla.FilebrowserStartActivity" />
 	</PreferenceScreen>
 	<ch.blinkenlights.android.vanilla.ScanPreference />

@@ -27,6 +27,7 @@ import android.os.Bundle;
 import android.view.View;
 import android.view.Window;
 import android.widget.ImageButton;
+import su.thinkdifferent.vanilla.R;
 
 /**
  * Compact playback activity that displays itself like a dialog. That is, the

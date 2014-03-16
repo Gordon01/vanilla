@@ -29,6 +29,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
+import su.thinkdifferent.vanilla.R;
 
 /**
  * The preferences activity in which one can change application preferences.

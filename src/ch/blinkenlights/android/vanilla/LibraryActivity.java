@@ -63,6 +63,7 @@ import android.widget.Toast;
 import com.viewpagerindicator.TabPageIndicator;
 import java.io.File;
 import junit.framework.Assert;
+import su.thinkdifferent.vanilla.R;
 
 /**
  * The library activity where songs to play can be selected from the library.

@@ -32,6 +32,7 @@ import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
+import su.thinkdifferent.vanilla.R;
 
 /**
  * A preference that provides a dialog with a slider for idle time.

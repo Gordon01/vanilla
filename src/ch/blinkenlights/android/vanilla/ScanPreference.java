@@ -30,6 +30,7 @@ import android.net.Uri;
 import android.os.Environment;
 import android.preference.Preference;
 import android.util.AttributeSet;
+import su.thinkdifferent.vanilla.R;
 
 /**
  * A preference that allows the MediaScanner to be triggered.

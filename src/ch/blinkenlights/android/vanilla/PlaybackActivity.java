@@ -23,6 +23,8 @@
 package ch.blinkenlights.android.vanilla;
 
 import java.io.File;
+import su.thinkdifferent.vanilla.R;
+
 import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -313,7 +315,7 @@ public abstract class PlaybackActivity extends Activity
 		if (mCoverView != null)
 			mCoverView.setSong(delta + 1, song);
 	}
-
+	
 	/**
 	 * Called when the song timeline position/size has changed.
 	 */

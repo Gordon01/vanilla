@@ -37,6 +37,7 @@ import android.view.View;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.Button;
+import su.thinkdifferent.vanilla.R;
 
 /**
  * The playlist activity where playlist songs can be viewed and reordered.

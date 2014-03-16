@@ -87,7 +87,7 @@ public class MediaButtonReceiver extends BroadcastReceiver {
 		if (sBeep == 1) {
 			if (sBeepPlayer == null) {
 				sBeepPlayer = new AsyncPlayer("BeepPlayer");
-				sBeepSound = Uri.parse("android.resource://ch.blinkenlights.android.vanilla/raw/beep");
+				sBeepSound = Uri.parse("android.resource://su.thinkdifferent.vanilla/raw/beep");
 			}
 			sBeepPlayer.play(context, sBeepSound, false, AudioManager.STREAM_MUSIC);
 		}

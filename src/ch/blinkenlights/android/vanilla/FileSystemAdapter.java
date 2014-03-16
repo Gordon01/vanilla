@@ -40,6 +40,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.regex.Pattern;
+import su.thinkdifferent.vanilla.R;
 
 /**
  * A list adapter that provides a view of the filesystem. The active directory

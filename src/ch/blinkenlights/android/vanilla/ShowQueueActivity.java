@@ -19,6 +19,7 @@ package ch.blinkenlights.android.vanilla;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import su.thinkdifferent.vanilla.R;
 import android.app.Activity;
 import android.os.Bundle;
 import android.view.View;

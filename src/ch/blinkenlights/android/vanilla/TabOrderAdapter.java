@@ -27,6 +27,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
+import su.thinkdifferent.vanilla.R;
 
 /**
  * CursorAdapter backed by MediaStore playlists.

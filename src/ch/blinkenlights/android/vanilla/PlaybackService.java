@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2014  Alexander Sergeev <etc9053@gmail.com>
  * Copyright (C) 2012-2013 Adrian Ulrich <adrian@blinkenlights.ch>
  * Copyright (C) 2010, 2011 Christopher Eby <kreed@kreed.org>
  *
@@ -68,6 +69,7 @@ import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import su.thinkdifferent.vanilla.R;
 
 
 /**
@@ -978,6 +980,11 @@ public final class PlaybackService extends Service
 		AppWidgetManager manager = AppWidgetManager.getInstance(this);
 		Song song = mCurrentSong;
 		int state = mState;
+		//Sony SmartWatch update
+		Intent intent = new Intent("SMARTWATCH_REFRESH");
+		intent.putExtra("message", "data");
+		sendBroadcast(intent);
+		//Widgets update
 		OneCellWidget.updateWidget(this, manager, song, state);
 		FourLongWidget.updateWidget(this, manager, song, state);
 		FourSquareWidget.updateWidget(this, manager, song, state);

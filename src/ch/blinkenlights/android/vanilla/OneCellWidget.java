@@ -31,6 +31,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.widget.RemoteViews;
+import su.thinkdifferent.vanilla.R;
 
 /**
  * 1x1 widget that shows title, album art, and hidden next and play/pause

@@ -32,6 +32,7 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.view.View;
 import android.widget.RemoteViews;
+import su.thinkdifferent.vanilla.R;
 
 /**
  * 1x4 widget that shows title, artist, album art, a play/pause button, and a

@@ -52,7 +52,7 @@ THE SOFTWARE.
 		android:title="@string/replaygain"
 		android:summary="@string/replaygain_summary">
 		<intent
-			android:targetPackage="ch.blinkenlights.android.vanilla"
+			android:targetPackage="su.thinkdifferent.vanilla"
 			android:targetClass="ch.blinkenlights.android.vanilla.PreferencesActivity$ReplayGainActivity" />
 	</PreferenceScreen>
 

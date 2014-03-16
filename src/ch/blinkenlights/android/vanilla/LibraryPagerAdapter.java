@@ -43,6 +43,7 @@ import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.TextView;
 import java.util.Arrays;
+import su.thinkdifferent.vanilla.R;
 
 /**
  * PagerAdapter that manages the library media ListViews.
