@@ -23,12 +23,11 @@ THE SOFTWARE.
 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
 	package="su.thinkdifferent.vanilla"
-	android:versionName="0.9.24"
-	android:versionCode="0928"
+	android:versionName="0.9.25"
+	android:versionCode="0929"
 	android:installLocation="auto">
 	<uses-sdk android:minSdkVersion="15" android:targetSdkVersion="16" />
 	<uses-permission android:name="android.permission.WAKE_LOCK" />
-	<uses-permission android:name="android.permission.READ_PHONE_STATE" />
 	<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
 	<!-- This is needed for isWiredHeadsetOn() to work in some cases. (bug?) -->
 	<uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
@@ -152,6 +151,7 @@ THE SOFTWARE.
 		<activity android:name="su.thinkdifferent.vanilla.SWPreferenceActivity$SWPreferenceFragment" />
 		<activity android:name="ch.blinkenlights.android.vanilla.PreferencesActivity$NotificationsActivity" />
 		<activity android:name="ch.blinkenlights.android.vanilla.PreferencesActivity$ShakeActivity" />
+		<activity android:name="ch.blinkenlights.android.vanilla.PreferencesActivity$CoverArtActivity" />
 		<activity android:name="ch.blinkenlights.android.vanilla.PreferencesActivity$MiscActivity" />
 		<activity android:name="ch.blinkenlights.android.vanilla.PreferencesActivity$AboutActivity" />
 		<activity

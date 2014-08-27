@@ -25,7 +25,6 @@ package ch.blinkenlights.android.vanilla;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.ContentObserver;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -39,6 +38,7 @@ import android.view.ContextMenu.ContextMenuInfo;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.util.LruCache;
 import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -125,6 +125,10 @@ public class LibraryPagerAdapter
 	 * The remotefile adapter instance, also stored at mAdapters[MediaUtils.TYPE_REMOTELIB].
 	 */
 	private RemoteSystemAdapter mRemoteAdapter;
+	/**
+	 * LRU cache holding the last scrolling position of the filesadapter listview
+	 */
+	private FilePositionLruCache mFilePosLRU;
 	/**
 	 * The adapter of the currently visible list.
 	 */
@@ -214,6 +218,7 @@ public class LibraryPagerAdapter
 	 */
 	public LibraryPagerAdapter(LibraryActivity activity, Looper workerLooper)
 	{
+		mFilePosLRU = new FilePositionLruCache(32);
 		mActivity = activity;
 		mUiHandler = new Handler(this);
 		mWorkerHandler = new Handler(workerLooper, this);
@@ -365,7 +370,7 @@ public class LibraryPagerAdapter
 			view.setAdapter(adapter);
 			if ((type != MediaUtils.TYPE_FILE) && (type != MediaUtils.TYPE_REMOTELIB))
 				loadSortOrder((MediaAdapter)adapter);
-			enableFastScroll(view);
+			view.setFastScrollAlwaysVisible(true); // also enables fastscroll
 			adapter.setFilter(mFilter);
 
 			mAdapters[type] = adapter;
@@ -576,6 +581,10 @@ public class LibraryPagerAdapter
 			if (mFilesAdapter == null) {
 				mPendingFileLimiter = limiter;
 			} else {
+				Limiter oldLimiter = mFilesAdapter.getLimiter();
+				int curPos = mLists[limiter.type].getFirstVisiblePosition();
+				mFilePosLRU.putLimiter(oldLimiter, curPos);
+
 				mFilesAdapter.setLimiter(limiter);
 				requestRequery(mFilesAdapter);
 			}
@@ -656,6 +665,14 @@ public class LibraryPagerAdapter
 				pos = mSavedPositions[index];
 				mSavedPositions[index] = 0;
 			}
+
+			if (index == MediaUtils.TYPE_FILE) {
+				Limiter curLimiter = mAdapters[index].getLimiter();
+				Integer curPos = mFilePosLRU.getLimiter(curLimiter);
+				if (curPos != null)
+					pos = (int)curPos;
+			}
+
 			mLists[index].setSelection(pos);
 			break;
 		}
@@ -776,12 +793,6 @@ public class LibraryPagerAdapter
 		adapter.setSortMode(mode);
 		requestRequery(adapter);
 
-		// Force a new FastScroller to be created so the scroll sections
-		// are updated.
-		ListView view = mLists[mTabOrder[mCurrentPage]];
-		view.setFastScrollEnabled(false);
-		enableFastScroll(view);
-
 		Handler handler = mWorkerHandler;
 		handler.sendMessage(handler.obtainMessage(MSG_SAVE_SORT, adapter));
 	}
@@ -854,18 +865,34 @@ public class LibraryPagerAdapter
 		mActivity.onItemClicked(intent);
 	}
 
+
 	/**
-	 * Enables FastScroller on the given list, ensuring it is always visible
-	 * and suppresses the match drag position feature in newer versions of
-	 * Android.
-	 *
-	 * @param list The list to enable.
+	 * LRU implementation for filebrowser position cache
 	 */
-	private void enableFastScroll(ListView list)
-	{
-		mActivity.mFakeTarget = true;
-		list.setFastScrollEnabled(true);
-		CompatHoneycomb.setFastScrollAlwaysVisible(list);
-		mActivity.mFakeTarget = false;
+	private class FilePositionLruCache extends LruCache<String, Integer> {
+		public FilePositionLruCache(int size) {
+			super(size);
+		}
+		public void putLimiter(Limiter limiter, Integer val) {
+			this.put(_k(limiter), val);
+		}
+		public Integer getLimiter(Limiter limiter) {
+			return this.get(_k(limiter));
+		}
+
+		/**
+		 * Stringify limiter or return / if null
+		 */
+		private String _k(Limiter limiter) {
+			String result = "/";
+			if (limiter != null) {
+				for(String entry : limiter.names) {
+					result = result + entry + "/";
+				}
+			}
+			return result;
+		}
+
 	}
+
 }
