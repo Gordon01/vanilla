@@ -40,6 +40,12 @@ THE SOFTWARE.
 			android:targetClass="ch.blinkenlights.android.vanilla.PreferencesActivity$LibraryActivity" />
 	</PreferenceScreen>
 	<PreferenceScreen
+		android:title="@string/smartwatch">
+		<intent
+			android:targetPackage="su.thinkdifferent.vanilla"
+			android:targetClass="su.thinkdifferent.vanilla.SWPreferenceActivity" />
+	</PreferenceScreen>
+	<PreferenceScreen
 		android:title="@string/notifications">
 		<intent
 			android:targetPackage="su.thinkdifferent.vanilla"

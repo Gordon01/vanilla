@@ -64,7 +64,7 @@ public class SWExtensionService extends ExtensionService {
 
     public static final String EXTENSION_KEY = "su.thinkdifferent.vanilla.key";
 
-    public static final String LOG_TAG = "SampleControlExtension";
+    public static final String LOG_TAG = "SmartVanilla";
 
     public SWExtensionService() {
         super(EXTENSION_KEY);

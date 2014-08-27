@@ -100,6 +100,12 @@ public class SWRegistrationInformation extends RegistrationInformation {
     public int getRequiredWidgetApiVersion() {
         return 0;
     }
+    
+    //We do support low power mode!
+    @Override
+    public boolean supportsLowPowerMode() {
+        return true;
+    }
 
     /**
      * Get the extension registration information.

@@ -24,7 +24,7 @@ THE SOFTWARE.
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
 	package="su.thinkdifferent.vanilla"
 	android:versionName="0.9.24"
-	android:versionCode="0927"
+	android:versionCode="0928"
 	android:installLocation="auto">
 	<uses-sdk android:minSdkVersion="15" android:targetSdkVersion="16" />
 	<uses-permission android:name="android.permission.WAKE_LOCK" />
@@ -149,6 +149,7 @@ THE SOFTWARE.
 		<activity android:name="ch.blinkenlights.android.vanilla.PreferencesActivity$AudioActivity" />
 		<activity android:name="ch.blinkenlights.android.vanilla.PreferencesActivity$PlaybackActivity" />
 		<activity android:name="ch.blinkenlights.android.vanilla.PreferencesActivity$LibraryActivity" />
+		<activity android:name="su.thinkdifferent.vanilla.SWPreferenceActivity$SWPreferenceFragment" />
 		<activity android:name="ch.blinkenlights.android.vanilla.PreferencesActivity$NotificationsActivity" />
 		<activity android:name="ch.blinkenlights.android.vanilla.PreferencesActivity$ShakeActivity" />
 		<activity android:name="ch.blinkenlights.android.vanilla.PreferencesActivity$MiscActivity" />
@@ -163,7 +164,11 @@ THE SOFTWARE.
 		<!-- This is needed for SmartWatch support -->
 		<activity
             android:name="su.thinkdifferent.vanilla.SWPreferenceActivity"
-            android:label="@string/preference_activity_title" >
+            android:label="@string/preference_activity_title"
+  		    android:parentActivityName="ch.blinkenlights.android.vanilla.PreferencesActivity" >
+	        <meta-data
+	            android:name="android.support.PARENT_ACTIVITY"
+	            android:value="ch.blinkenlights.android.vanilla.PreferencesActivity" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
             </intent-filter>
@@ -202,6 +207,7 @@ THE SOFTWARE.
                 <action android:name="com.sonyericsson.extras.aef.control.SWIPE_EVENT" />
                 <action android:name="com.sonyericsson.extras.aef.control.OBJECT_CLICK_EVENT" />
                 <action android:name="com.sonyericsson.extras.aef.control.MENU_ITEM_SELECTED" />
+                <action android:name="com.sonyericsson.extras.aef.control.ACTIVE_POWER_SAVE_MODE_STATUS_CHANGED" />
             </intent-filter>
         </receiver>
 

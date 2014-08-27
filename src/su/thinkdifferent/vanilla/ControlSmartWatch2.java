@@ -46,14 +46,17 @@ Copyright (c) 2011-2013, Sony Mobile Communications AB
 package su.thinkdifferent.vanilla;
 
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 
 import android.media.AudioManager;
 import android.os.Bundle;
 import android.os.Handler;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -83,15 +86,16 @@ public final class ControlSmartWatch2 extends ControlExtension {
     private static final int MENU_ITEM_3 = 3;
     private static final int MENU_ITEM_4 = 4;
     private static final int MENU_ITEM_5 = 5;
-    public static final int[] SHUFFLE_ICONS =
+    private static final int[] SHUFFLE_ICONS =
 		{ R.drawable.sw_rnd_off, R.drawable.sw_rnd_active, R.drawable.sw_rnd_album_active };
-	public static final int[] FINISH_ICONS =
+    private static final int[] FINISH_ICONS =
 		{ R.drawable.sw_rpt_off, R.drawable.sw_rpt_active, R.drawable.sw_rpt_current_active, R.drawable.sw_rpt_stop_current_active, R.drawable.sw_rpt_random_active };
 
     private Handler mHandler;
 
     private ControlViewGroup mLayout = null;
     private Context mContext; 
+    private SharedPreferences mPrefs = null;
 
     private boolean mTextMenu = false;
     private boolean mCurrentIsPlaying;
@@ -200,16 +204,23 @@ public final class ControlSmartWatch2 extends ControlExtension {
     public void onResume() {
     	Log.d(SWExtensionService.LOG_TAG, "Resuming SW2 activity");
     	
+    	//Setting broadcat listener
     	IntentFilter mFilter = new IntentFilter("SMARTWATCH_REFRESH");
     	mContext.registerReceiver(mMessageReceiver, mFilter);
     	isRegistered = true;
+    	    	
+    	//Setting preference var. We need to read settings in many places
+		mPrefs = PreferenceManager.getDefaultSharedPreferences(mContext);
     	
 		Song song = null;
 		Bitmap cover = null;
         Bundle[] data = new Bundle[5];
 
-		if (PlaybackService.hasInstance()) {
+		if (PlaybackService.hasInstance()) {     
+			Log.d(SWExtensionService.LOG_TAG, "PlaybackService exists");
 			PlaybackService service = PlaybackService.get(mContext);
+			//TODO:It is possible, that PlaybackService simply don't have song.
+			//So it's need to be handled properly, so no NullPointException.
 			song = service.getSong(0);
 			cover = song.getCover(mContext);
 			int state = service.getState();
@@ -257,8 +268,11 @@ public final class ControlSmartWatch2 extends ControlExtension {
 	        pSong = song;
 	        pState = state;
 	        pCover = cover;
+		} else {
+			Log.d(SWExtensionService.LOG_TAG, "PlaybackService does not exist. Starting it.");
+        	mContext.startService(new Intent(mContext, PlaybackService.class));
 		}
-
+		
 		showLayout(R.layout.sw_control_2, data);
 		
 		//It's better to send image after showing layout because it speed up loading (but very slightly).
@@ -272,6 +286,12 @@ public final class ControlSmartWatch2 extends ControlExtension {
     
     public void updateSongInfo() {
     	Log.d(SWExtensionService.LOG_TAG, "Updating song info in SW2 activity");
+    	
+		//This should never happen bacause PlaybackService sends broadcast intent, 
+    	//which calls this function, but just to be safe :)
+		if (!PlaybackService.hasInstance()) 
+			return;
+			
 		Song song = null;
 		Bitmap cover = null;
 		int shuffle = 0;
@@ -279,26 +299,36 @@ public final class ControlSmartWatch2 extends ControlExtension {
 		int state = 0;
 		
 		//Firstly, we getting current state from PlaybackService
-		if (PlaybackService.hasInstance()) {
-			PlaybackService service = PlaybackService.get(mContext);
-			song = service.getSong(0);
-			cover = song.getCover(mContext);
-			state = service.getState();
-			shuffle = PlaybackService.shuffleMode(state);
-			finish = PlaybackService.finishAction(state);
-			Log.d(SWExtensionService.LOG_TAG, "State = " + Integer.toString(state));
-			Log.d(SWExtensionService.LOG_TAG, "Shuffle = " + Integer.toString(shuffle));
-			Log.d(SWExtensionService.LOG_TAG, "Finish = " + Integer.toString(finish));
-			mCurrentIsPlaying = (state & PlaybackService.FLAG_PLAYING) != 0;
+		PlaybackService service = PlaybackService.get(mContext);
+		song = service.getSong(0);
+		cover = song.getCover(mContext);
+		state = service.getState();
+		shuffle = PlaybackService.shuffleMode(state);
+		finish = PlaybackService.finishAction(state);
+		Log.d(SWExtensionService.LOG_TAG, "State = " + Integer.toString(state));
+		Log.d(SWExtensionService.LOG_TAG, "Shuffle = " + Integer.toString(shuffle));
+		Log.d(SWExtensionService.LOG_TAG, "Finish = " + Integer.toString(finish));
+		mCurrentIsPlaying = (state & PlaybackService.FLAG_PLAYING) != 0;
+	
+		//We just started PlaybackService at onResume. 
+		//TODO: doubling the code. needs optimization.
+		if (pSong == null) {
+			pSong = song;
+			sendText(R.id.artist, song.artist);
+			sendText(R.id.track, song.title);
+			//Dirty hack to force update play/shuffle/final buttons
+			pState = 999;
 		}
 		
-		//Check if cover is updated
-		if (pCover != cover) {
-			if (cover != null) {
-				sendImage(R.id.album_cover, cover);
-			} else {
-				sendImage(R.id.album_cover, R.drawable.fallback_cover);
-			}
+		//Song is a big object so we cheching artist/title individually
+		//Check if artist changed
+		if (pSong.artist != song.artist) {
+	    	sendText(R.id.artist, song.artist);
+		}
+		
+		//Check if title changed
+		if (pSong.title != song.title) {
+			sendText(R.id.track, song.title);
 		}
 		
 		//Globally check is whole state changed
@@ -326,21 +356,21 @@ public final class ControlSmartWatch2 extends ControlExtension {
 			}
 		}
 		
-		//Song is a big object so we cheching artist/title individually
-		//Check if artist changed
-		if (pSong.artist != song.artist) {
-	    	sendText(R.id.artist, song.artist);
-		}
-		
-		//Check if title changed
-		if (pSong.title != song.title) {
-			sendText(R.id.track, song.title);
+		//Cover is updated last bacause it result plugin to look more responsive.
+		//Check if cover is updated
+		if (pCover != cover) {
+			if (cover != null) {
+				sendImage(R.id.album_cover, cover);
+			} else {
+				sendImage(R.id.album_cover, R.drawable.fallback_cover);
+			}
 		}
 		
         //Updating pre-variables
         pSong = song;
         pState = state;
         pCover = cover;
+		
     }
 
     @Override
@@ -360,23 +390,57 @@ public final class ControlSmartWatch2 extends ControlExtension {
 
     @Override
     public void onSwipe(int direction) {
-    	AudioManager mAudioManager = (AudioManager)mContext.getSystemService(PlaybackService.AUDIO_SERVICE);
+    	String action = "";
         switch (direction) {
             case Control.Intents.SWIPE_DIRECTION_UP:
-            	mAudioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_RAISE, AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE);
+                action = mPrefs.getString(
+                        mContext.getString(R.string.preference_key_swipe_up), "");
+                handleSwipe(action);
                 break;
             case Control.Intents.SWIPE_DIRECTION_DOWN:
-            	mAudioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_LOWER, AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE);
+                action = mPrefs.getString(
+                        mContext.getString(R.string.preference_key_swipe_down), "");
+                handleSwipe(action);
                 break;
             case Control.Intents.SWIPE_DIRECTION_LEFT:
-            	mAudioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_LOWER, AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE);
+                action = mPrefs.getString(
+                        mContext.getString(R.string.preference_key_swipe_left), "");
+                handleSwipe(action);
                 break;
             case Control.Intents.SWIPE_DIRECTION_RIGHT:
-            	mAudioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_RAISE, AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE);
+                action = mPrefs.getString(
+                        mContext.getString(R.string.preference_key_swipe_right), "");
+                handleSwipe(action);
                 break;
             default:
                 break;
         }
+    }
+    
+    public void handleSwipe(String action) {
+    	Log.d(SWExtensionService.LOG_TAG, "Handling swipe: " + action);
+    	AudioManager mAudioManager = (AudioManager)mContext.getSystemService(PlaybackService.AUDIO_SERVICE);
+    	if 		  (action.equals("next_song")) {
+    		sendActionToPS(PlaybackService.ACTION_NEXT_SONG);
+    	} else if (action.equals("prev_song")) {
+    		sendActionToPS(PlaybackService.ACTION_PREVIOUS_SONG);
+    	} else if (action.equals("next_auto")) {
+    		sendActionToPS(PlaybackService.ACTION_NEXT_SONG_AUTOPLAY);
+    	} else if (action.equals("prev_auto")) {
+    		sendActionToPS(PlaybackService.ACTION_REWIND_SONG);
+    	} else if (action.equals("vol_up")) {
+        	mAudioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_RAISE, AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE);
+    	} else if (action.equals("vol_down")) {
+    		mAudioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_LOWER, AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE);
+    	}
+    }
+    
+    @Override
+    public void onActiveLowPowerModeChange(boolean lowPowerModeOn) {
+    	Log.d(SWExtensionService.LOG_TAG, "Low power mode changed " + lowPowerModeOn);
+//        Boolean action = mPrefs.getBoolean(
+//                mContext.getString(R.string.preference_key_powersave), false);
+        //TODO: Change layout here to powersave one
     }
 
     @Override
@@ -436,8 +500,16 @@ public final class ControlSmartWatch2 extends ControlExtension {
             btn_back.setOnClickListener(new OnClickListener() {
                 @Override
                 public void onClick() {
+                	//We need to get status every click, because it can be changed anytime.
+                	//Another way - globalvar and onClick listener on pref item.
+                    boolean isAutoplay = mPrefs.getBoolean(
+                            mContext.getString(R.string.preference_key_autoplay), false);
+                    if (isAutoplay) {
+                    	sendActionToPS(PlaybackService.ACTION_REWIND_SONG);
+                    } else {
+                        sendActionToPS(PlaybackService.ACTION_PREVIOUS_SONG);
+                    }
                     sendImage(R.id.back, R.drawable.sw_back_pressed);
-                    sendActionToPS(PlaybackService.ACTION_REWIND_SONG);
                     mHandler.postDelayed(new SelectToggler(R.id.back,
                             R.drawable.sw_back), SELECT_TOGGLER_MS);
                 }
@@ -447,8 +519,16 @@ public final class ControlSmartWatch2 extends ControlExtension {
             btn_next.setOnClickListener(new OnClickListener() {
                 @Override
                 public void onClick() {
+                	//We need to get status every click, because it can be changed anytime.
+                	//Another way - globalvar and onClick listener on pref item.
+                    boolean isAutoplay = mPrefs.getBoolean(
+                            mContext.getString(R.string.preference_key_autoplay), false);
+                    if (isAutoplay) {
+                    	sendActionToPS(PlaybackService.ACTION_NEXT_SONG_AUTOPLAY);
+                    } else {
+                        sendActionToPS(PlaybackService.ACTION_NEXT_SONG);
+                    }
                     sendImage(R.id.next, R.drawable.sw_next_pressed);
-                    sendActionToPS(PlaybackService.ACTION_NEXT_SONG_AUTOPLAY);
                     mHandler.postDelayed(new SelectToggler(R.id.next,
                             R.drawable.sw_next), SELECT_TOGGLER_MS);
                 }
@@ -473,19 +553,19 @@ public final class ControlSmartWatch2 extends ControlExtension {
             });
             
             //Play button requires trick to change state
-            //TODO: This is slow. Maybe change visibility?
+            //TODO: This is slow and bydlo. Maybe change visibility?
             ControlView btn_play = mLayout.findViewById(R.id.play);
             btn_play.setOnClickListener(new OnClickListener() {
                 @Override
                 public void onClick() {
                 	if (mCurrentIsPlaying) {
-	                    sendImage(R.id.play, R.drawable.sw_play_pressed);
 	                    sendActionToPS(PlaybackService.ACTION_TOGGLE_PLAYBACK);
+	                    sendImage(R.id.play, R.drawable.sw_play_pressed);
 	                    mHandler.postDelayed(new SelectToggler(R.id.play,
 	                            R.drawable.sw_play), SELECT_TOGGLER_MS);
                 	} else {
-	                    sendImage(R.id.play, R.drawable.sw_pause_pressed);
 	                    sendActionToPS(PlaybackService.ACTION_TOGGLE_PLAYBACK);
+	                    sendImage(R.id.play, R.drawable.sw_pause_pressed);
 	                    mHandler.postDelayed(new SelectToggler(R.id.play,
 	                            R.drawable.sw_pause), SELECT_TOGGLER_MS);
                 	}
@@ -496,9 +576,12 @@ public final class ControlSmartWatch2 extends ControlExtension {
     
     
     private void sendActionToPS(String act) {
+    	Log.d(SWExtensionService.LOG_TAG, "Sending action to PS: " + act);
 		if (act != null) {
+			ComponentName service = new ComponentName(mContext, PlaybackService.class);
 			Intent intent = new Intent(mContext, PlaybackService.class);
 			intent.setAction(act);
+			intent.setComponent(service);
 			mContext.startService(intent);
 		}
     }

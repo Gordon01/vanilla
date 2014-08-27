@@ -31,6 +31,9 @@ THE SOFTWARE.
 		android:fragment="ch.blinkenlights.android.vanilla.PreferencesActivity$LibraryFragment"
 		android:title="@string/library_screen" />
 	<header
+		android:fragment="su.thinkdifferent.vanilla.SWPreferenceActivity$SWPreferenceFragment"
+		android:title="@string/smartwatch" />
+	<header
 		android:fragment="ch.blinkenlights.android.vanilla.PreferencesActivity$NotificationsFragment"
 		android:title="@string/notifications" />
 	<header

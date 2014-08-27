@@ -2,4 +2,12 @@
 <!-- Here we put strings that do not have to be translated. -->
 <resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
     <string name="preference_key_read_me">preference_key_read_me</string>
+    <string name="preference_key_border">preference_key_border</string>
+    <string name="preference_key_powersave">preference_key_powersave</string>
+    <string name="preference_key_autoplay">preference_key_autoplay</string>
+    <string name="preference_key_swipe">preference_key_swipe</string>
+    <string name="preference_key_swipe_up">preference_key_swipe_up</string>
+    <string name="preference_key_swipe_right">preference_key_swipe_right</string>
+    <string name="preference_key_swipe_down">preference_key_swipe_down</string>
+    <string name="preference_key_swipe_left">preference_key_swipe_left</string>
 </resources>

@@ -59,18 +59,23 @@ public class LibraryPagerAdapter
 	 * The number of unique list types. The number of visible lists may be
 	 * smaller.
 	 */
+//	public static final int MAX_ADAPTER_COUNT = 7;
 	public static final int MAX_ADAPTER_COUNT = 6;
 	/**
 	 * The human-readable title for each list. The positions correspond to the
 	 * MediaUtils ids, so e.g. TITLES[MediaUtils.TYPE_SONG] = R.string.songs
 	 */
+//	public static final int[] TITLES = { R.string.artists, R.string.albums, R.string.songs,
+//	                                     R.string.playlists, R.string.genres, R.string.files, R.string.remote_lib };
 	public static final int[] TITLES = { R.string.artists, R.string.albums, R.string.songs,
-	                                     R.string.playlists, R.string.genres, R.string.files };
+    R.string.playlists, R.string.genres, R.string.files};
 	/**
 	 * Default tab order.
 	 */
+//	public static final int[] DEFAULT_ORDER = { MediaUtils.TYPE_ARTIST, MediaUtils.TYPE_ALBUM, MediaUtils.TYPE_SONG,
+//	                                            MediaUtils.TYPE_PLAYLIST, MediaUtils.TYPE_GENRE, MediaUtils.TYPE_FILE, MediaUtils.TYPE_REMOTELIB };
 	public static final int[] DEFAULT_ORDER = { MediaUtils.TYPE_ARTIST, MediaUtils.TYPE_ALBUM, MediaUtils.TYPE_SONG,
-	                                            MediaUtils.TYPE_PLAYLIST, MediaUtils.TYPE_GENRE, MediaUtils.TYPE_FILE };
+        MediaUtils.TYPE_PLAYLIST, MediaUtils.TYPE_GENRE, MediaUtils.TYPE_FILE};
 	/**
 	 * The user-chosen tab order.
 	 */
@@ -117,6 +122,10 @@ public class LibraryPagerAdapter
 	 */
 	private FileSystemAdapter mFilesAdapter;
 	/**
+	 * The remotefile adapter instance, also stored at mAdapters[MediaUtils.TYPE_REMOTELIB].
+	 */
+	private RemoteSystemAdapter mRemoteAdapter;
+	/**
 	 * The adapter of the currently visible list.
 	 */
 	private LibraryAdapter mCurrentAdapter;
@@ -136,6 +145,10 @@ public class LibraryPagerAdapter
 	 * A limiter that should be set when the files adapter is created.
 	 */
 	private Limiter mPendingFileLimiter;
+	/**
+	 * A limiter that should be set when the files adapter is created.
+	 */
+	private Limiter mRemoteLimiter;
 	/**
 	 * List positions stored in the saved state, or null if none were stored.
 	 */
@@ -332,6 +345,10 @@ public class LibraryPagerAdapter
 				adapter = mFilesAdapter = new FileSystemAdapter(activity, mPendingFileLimiter);
 				mPendingFileLimiter = null;
 				break;
+			case MediaUtils.TYPE_REMOTELIB:
+				adapter = mRemoteAdapter = new RemoteSystemAdapter(activity, mRemoteLimiter);
+				mRemoteLimiter = null;
+				break;	
 			default:
 				throw new IllegalArgumentException("Invalid media type: " + type);
 			}
@@ -346,7 +363,7 @@ public class LibraryPagerAdapter
 				view.addHeaderView(header);
 			}
 			view.setAdapter(adapter);
-			if (type != MediaUtils.TYPE_FILE)
+			if ((type != MediaUtils.TYPE_FILE) && (type != MediaUtils.TYPE_REMOTELIB))
 				loadSortOrder((MediaAdapter)adapter);
 			enableFastScroll(view);
 			adapter.setFilter(mFilter);
@@ -464,12 +481,21 @@ public class LibraryPagerAdapter
 	 */
 	public void clearLimiter(int type)
 	{
-		if (type == MediaUtils.TYPE_FILE) {
-			if (mFilesAdapter == null) {
-				mPendingFileLimiter = null;
+		if ((type == MediaUtils.TYPE_FILE) && (type == MediaUtils.TYPE_REMOTELIB)) {
+			if (type == MediaUtils.TYPE_FILE) {
+				if (mFilesAdapter == null) {
+					mPendingFileLimiter = null;
+				} else {
+					mFilesAdapter.setLimiter(null);
+					requestRequery(mFilesAdapter);
+				}
 			} else {
-				mFilesAdapter.setLimiter(null);
-				requestRequery(mFilesAdapter);
+				if (mRemoteAdapter == null) {
+					mRemoteLimiter = null;
+				} else {
+					mRemoteAdapter.setLimiter(null);
+					requestRequery(mRemoteAdapter);
+				}
 			}
 		} else {
 			if (mAlbumAdapter == null) {
@@ -552,6 +578,15 @@ public class LibraryPagerAdapter
 			} else {
 				mFilesAdapter.setLimiter(limiter);
 				requestRequery(mFilesAdapter);
+			}
+			tab = -1;
+			break;
+		case MediaUtils.TYPE_REMOTELIB:
+			if (mRemoteAdapter == null) {
+				mRemoteLimiter = limiter;
+			} else {
+				mRemoteAdapter.setLimiter(limiter);
+				requestRequery(mRemoteAdapter);
 			}
 			tab = -1;
 			break;

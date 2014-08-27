@@ -51,6 +51,7 @@ import android.content.DialogInterface;
 import android.content.DialogInterface.OnClickListener;
 import android.os.Bundle;
 import android.preference.Preference;
+import android.preference.PreferenceFragment;
 import android.preference.Preference.OnPreferenceClickListener;
 import android.preference.PreferenceActivity;
 import android.util.Log;
@@ -71,18 +72,27 @@ public class SWPreferenceActivity extends PreferenceActivity {
         // Load the preferences from an XML resource
         addPreferencesFromResource(R.xml.liveware_preference);
 
-        // Handle read me
-        Preference preference = findPreference(getText(R.string.preference_key_read_me));
-        preference.setOnPreferenceClickListener(new OnPreferenceClickListener() {
-
-            @Override
-            public boolean onPreferenceClick(Preference preference) {
-                showDialog(DIALOG_READ_ME);
-                return true;
-            }
-        });
+//        // Handle read me
+//        Preference preference = findPreference(getText(R.string.preference_key_read_me));
+//        preference.setOnPreferenceClickListener(new OnPreferenceClickListener() {
+//
+//            @Override
+//            public boolean onPreferenceClick(Preference preference) {
+//                showDialog(DIALOG_READ_ME);
+//                return true;
+//            }
+//        });
 
     }
+    
+	public static class SWPreferenceFragment extends PreferenceFragment {
+		@Override
+		public void onCreate(Bundle savedInstanceState)
+		{
+			super.onCreate(savedInstanceState);
+			addPreferencesFromResource(R.xml.liveware_preference);
+		}
+	}
 
     @Override
     protected Dialog onCreateDialog(int id) {

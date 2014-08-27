@@ -24,9 +24,7 @@ package ch.blinkenlights.android.vanilla;
 
 import android.content.ContentResolver;
 import android.database.Cursor;
-import android.database.DatabaseUtils;
 import android.net.Uri;
-import android.os.Build;
 import android.provider.MediaStore;
 import java.io.File;
 import java.util.Arrays;
@@ -71,9 +69,14 @@ public class MediaUtils {
 	 */
 	public static final int TYPE_FILE = 5;
 	/**
+	 * Special type for remote files. Most methods do not accept this type
+	 * since files have no MediaStore id and require special handling.
+	 */
+	public static final int TYPE_REMOTELIB = 6;
+	/**
 	 * The number of different valid media types.
 	 */
-	public static final int TYPE_COUNT = 6;
+	public static final int TYPE_COUNT = 7;
 
 	/**
 	 * The default sort order for media queries. First artist, then album, then

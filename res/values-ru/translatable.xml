@@ -48,6 +48,7 @@
   <string name="play_or_enqueue">Добавить в очередь при воспроизведении; Воспроизвести если приостановлена</string>
   <string name="deleted">%s удалено.</string>
   <string name="delete_file_failed">Ошибка при удалении %s.</string>
+  <string name="remote_lib">Сервер</string>
   <string name="artists">Исполнители</string>
   <string name="albums">Альбомы</string>
   <string name="songs">Песни</string>
@@ -183,6 +184,7 @@
   </plurals>
   
   	<!-- Strings for LiveWare Extension: -->
+  	<string name="smartwatch">Настройки SmartWatch</string>
     <!-- Title of preference activity -->
     <string name="preference_activity_title">Настройки SmartVanilla Music</string>
     <!-- Name of extension, shown in preferences -->
@@ -191,6 +193,25 @@
     <string name="configuration_text">Настройки SmartVanilla Music</string>
     <!-- Menu option shown in preferences -->
     <string name="preference_option_read_me">Информация</string>
+    <string name="preference_option_border">Рамка обложки</string>
+    <string name="preference_summary_border">Только для SmartWatch 2</string>
+    <string name="preference_option_autoplay">Автовоспроизведение</string>
+    <string name="preference_summary_autoplay">Начинать воспроизведение при переключении песен</string>
+    <string name="preference_option_powersave">Энергосбережение</string>
+    <string name="preference_summary_powersave">Позволить экрану часов переходить в режим энергосбережения, вместо отключения</string>
+    <string name="preference_option_swipe">Настройка жестов</string>
+    <string name="preference_option_swipe_up">Жест вверх</string>
+    <string name="preference_option_swipe_right">Жест вправо</string>
+    <string name="preference_option_swipe_down">Жест вниз</string>
+    <string name="preference_option_swipe_left">Жест влево</string>
+    <string-array name="preference_array_swipe_str">
+	   <item>Следующая песня</item>
+	   <item>Предыдущая песня</item>
+	   <item>Следующая песня (авто)</item>
+	   <item>Предыдущая песня (авто)</item>
+	   <item>Увеличить громкость</item>
+	   <item>Уменьшить громкость</item>
+	</string-array>
     <!-- Read me text shown in dialog -->
     <string name="preference_option_read_me_txt">Свайп вверх или вправо увеличивает громкость, вниз или влево - уменьшает.</string>
 </resources>
