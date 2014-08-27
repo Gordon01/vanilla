@@ -126,7 +126,8 @@ public class MusicAlphabetIndexer {
 			cursor.moveToPosition(pos);
 			String curName   = cursor.getString(mColumnIndex);
 			String curKey    = MediaStore.Audio.keyFor(curName);
-			String curLetter = ( curKey.length() >= 3 ? curKey.substring(0, 3) : "\t~\t"); /* return fake info if there was no key */
+
+			String curLetter = ( curKey != null && curKey.length() >= 3 ? curKey.substring(0, 3) : "\t~\t"); /* return fake info if there was no key */
 			int diff         = curLetter.compareTo(targetLetter);
 			if (diff != 0) {
 				if (diff < 0) {
@@ -168,9 +169,12 @@ public class MusicAlphabetIndexer {
 		mDataCursor.moveToPosition(savedCursorPos);
 
 		String[] alphabet = ALPHABET_KEYS;
-		for (int i = 1, len = alphabet.length; i != len; ++i) {
-			if (key.startsWith(alphabet[i]))
-				return i;
+
+		if (key != null) { // can this really be null? google thinks so :-/
+			for (int i = 1, len = alphabet.length; i != len; ++i) {
+				if (key.startsWith(alphabet[i]))
+					return i;
+			}
 		}
 
 		return 0;

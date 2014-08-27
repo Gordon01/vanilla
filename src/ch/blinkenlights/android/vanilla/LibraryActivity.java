@@ -157,14 +157,6 @@ public class LibraryActivity
 	 * The adapter for the currently visible list.
 	 */
 	private LibraryAdapter mCurrentAdapter;
-	/**
-	 * If true, return target GINGERBREAD from getApplicationInfo().
-	 */
-	boolean mFakeTarget;
-	/**
-	 * ApplicationInfo with targetSdkVersion set to Gingerbread.
-	 */
-	private ApplicationInfo mFakeInfo;
 
 	@Override
 	public void onCreate(Bundle state)
@@ -764,7 +756,7 @@ public class LibraryActivity
 		}
 
 		if (message == null) {
-			message = res.getString(R.string.deleted, intent.getStringExtra("title"));
+			message = res.getString(R.string.deleted_item, intent.getStringExtra("title"));
 		}
 
 		Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
@@ -776,7 +768,7 @@ public class LibraryActivity
 		if (item.getGroupId() != 0)
 			return super.onContextItemSelected(item);
 
-		Intent intent = item.getIntent();
+		final Intent intent = item.getIntent();
 
 		switch (item.getItemId()) {
 		case MENU_EXPAND:
@@ -811,7 +803,21 @@ public class LibraryActivity
 			break;
 		}
 		case MENU_DELETE:
-			mHandler.sendMessage(mHandler.obtainMessage(MSG_DELETE, intent));
+			String delete_message = getString(R.string.delete_item, intent.getStringExtra("title"));
+			AlertDialog.Builder dialog = new AlertDialog.Builder(this);
+			dialog.setTitle(R.string.delete);
+			dialog
+				.setMessage(delete_message)
+				.setPositiveButton(R.string.delete, new DialogInterface.OnClickListener() {
+					public void onClick(DialogInterface dialog, int id) {
+						mHandler.sendMessage(mHandler.obtainMessage(MSG_DELETE, intent));
+					}
+				})
+				.setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
+					public void onClick(DialogInterface dialog, int id) {
+					}
+				});
+				dialog.create().show();
 			break;
 		case MENU_ADD_TO_PLAYLIST: {
 			SubMenu playlistMenu = item.getSubMenu();
@@ -1061,7 +1067,7 @@ public class LibraryActivity
 				cover = song.getCover(this);
 			}
 
-			if (Song.mDisableCoverArt)
+			if (Song.mCoverLoadMode == 0)
 				mCover.setVisibility(View.GONE);
 			else if (cover == null)
 				mCover.setImageResource(R.drawable.fallback_cover);
@@ -1111,20 +1117,4 @@ public class LibraryActivity
 		}
 	}
 
-	@Override
-	public ApplicationInfo getApplicationInfo()
-	{
-		ApplicationInfo info;
-		if (mFakeTarget) {
-			info = mFakeInfo;
-			if (info == null) {
-				info = new ApplicationInfo(super.getApplicationInfo());
-				info.targetSdkVersion = Build.VERSION_CODES.GINGERBREAD;
-				mFakeInfo = info;
-			}
-		} else {
-			info = super.getApplicationInfo();
-		}
-		return info;
-	}
 }

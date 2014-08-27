@@ -58,8 +58,6 @@ import android.os.Process;
 import android.os.SystemClock;
 import android.preference.PreferenceManager;
 import android.provider.MediaStore;
-import android.telephony.PhoneStateListener;
-import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.widget.RemoteViews;
 import android.widget.Toast;
@@ -316,7 +314,6 @@ public final class PlaybackService extends Service
 	SongTimeline mTimeline;
 	private Song mCurrentSong;
 
-	boolean mPlayingBeforeCall;
 	/**
 	 * Stores the saved position in the current song from saved state. Should
 	 * be seeked to when the song is loaded into MediaPlayer. Used only during
@@ -330,7 +327,6 @@ public final class PlaybackService extends Service
 	 */
 	private long mPendingSeekSong;
 	public Receiver mReceiver;
-	public InCallListener mCallListener;
 	private String mErrorMessage;
 	/**
 	 * Current fade-out progress. 1.0f if we are not fading out
@@ -389,7 +385,11 @@ public final class PlaybackService extends Service
 	 * Reference to precreated BASTP Object
 	 */
 	private BastpUtil mBastpUtil;
-	
+	/**
+	 * Reference to Playcounts helper class
+	 */
+	private PlayCountsHelper mPlayCounts;
+
 	@Override
 	public void onCreate()
 	{
@@ -399,6 +399,8 @@ public final class PlaybackService extends Service
 		mTimeline = new SongTimeline(this);
 		mTimeline.setCallback(this);
 		int state = loadState();
+
+		mPlayCounts = new PlayCountsHelper(this);
 
 		mMediaPlayer = getNewMediaPlayer();
 		mBastpUtil = new BastpUtil();
@@ -413,7 +415,11 @@ public final class PlaybackService extends Service
 		mNotificationMode = Integer.parseInt(settings.getString(PrefKeys.NOTIFICATION_MODE, "1"));
 		mScrobble = settings.getBoolean(PrefKeys.SCROBBLE, false);
 		mIdleTimeout = settings.getBoolean(PrefKeys.USE_IDLE_TIMEOUT, false) ? settings.getInt(PrefKeys.IDLE_TIMEOUT, 3600) : 0;
-		Song.mDisableCoverArt = settings.getBoolean(PrefKeys.DISABLE_COVER_ART, false);
+
+		Song.mCoverLoadMode = settings.getBoolean(PrefKeys.COVERLOADER_ANDROID, true) ? Song.mCoverLoadMode | Song.COVER_MODE_ANDROID : Song.mCoverLoadMode & ~(Song.COVER_MODE_ANDROID);
+		Song.mCoverLoadMode = settings.getBoolean(PrefKeys.COVERLOADER_VANILLA, true) ? Song.mCoverLoadMode | Song.COVER_MODE_VANILLA : Song.mCoverLoadMode & ~(Song.COVER_MODE_VANILLA);
+		Song.mCoverLoadMode = settings.getBoolean(PrefKeys.COVERLOADER_SHADOW , true) ? Song.mCoverLoadMode | Song.COVER_MODE_SHADOW  : Song.mCoverLoadMode & ~(Song.COVER_MODE_SHADOW);
+
 		mHeadsetOnly = settings.getBoolean(PrefKeys.HEADSET_ONLY, false);
 		mStockBroadcast = settings.getBoolean(PrefKeys.STOCK_BROADCAST, false);
 		mInvertNotification = settings.getBoolean(PrefKeys.NOTIFICATION_INVERTED_COLOR, false);
@@ -431,14 +437,6 @@ public final class PlaybackService extends Service
 
 		PowerManager powerManager = (PowerManager)getSystemService(POWER_SERVICE);
 		mWakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "VanillaMusicLock");
-
-		try {
-			mCallListener = new InCallListener();
-			TelephonyManager telephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
-			telephonyManager.listen(mCallListener, PhoneStateListener.LISTEN_CALL_STATE);
-		} catch (SecurityException e) {
-			// don't have READ_PHONE_STATE
-		}
 
 		mReceiver = new Receiver();
 		IntentFilter filter = new IntentFilter();
@@ -777,8 +775,15 @@ public final class PlaybackService extends Service
 		} else if (PrefKeys.USE_IDLE_TIMEOUT.equals(key) || PrefKeys.IDLE_TIMEOUT.equals(key)) {
 			mIdleTimeout = settings.getBoolean(PrefKeys.USE_IDLE_TIMEOUT, false) ? settings.getInt(PrefKeys.IDLE_TIMEOUT, 3600) : 0;
 			userActionTriggered();
-		} else if (PrefKeys.DISABLE_COVER_ART.equals(key)) {
-			Song.mDisableCoverArt = settings.getBoolean(PrefKeys.DISABLE_COVER_ART, false);
+		} else if (PrefKeys.COVERLOADER_ANDROID.equals(key)) {
+			Song.mCoverLoadMode = settings.getBoolean(PrefKeys.COVERLOADER_ANDROID, true) ? Song.mCoverLoadMode | Song.COVER_MODE_ANDROID : Song.mCoverLoadMode & ~(Song.COVER_MODE_ANDROID);
+			Song.mFlushCoverCache = true;
+		} else if (PrefKeys.COVERLOADER_VANILLA.equals(key)) {
+			Song.mCoverLoadMode = settings.getBoolean(PrefKeys.COVERLOADER_VANILLA, true) ? Song.mCoverLoadMode | Song.COVER_MODE_VANILLA : Song.mCoverLoadMode & ~(Song.COVER_MODE_VANILLA);
+			Song.mFlushCoverCache = true;
+		} else if (PrefKeys.COVERLOADER_SHADOW.equals(key)) {
+			Song.mCoverLoadMode = settings.getBoolean(PrefKeys.COVERLOADER_SHADOW, true) ? Song.mCoverLoadMode | Song.COVER_MODE_SHADOW : Song.mCoverLoadMode & ~(Song.COVER_MODE_SHADOW);
+			Song.mFlushCoverCache = true;
 		} else if (PrefKeys.NOTIFICATION_INVERTED_COLOR.equals(key)) {
 			updateNotification();
 		} else if (PrefKeys.HEADSET_ONLY.equals(key)) {
@@ -1202,7 +1207,7 @@ public final class PlaybackService extends Service
 				mMediaPlayer = mPreparedMediaPlayer;
 				mPreparedMediaPlayer = null;
 			}
-			else {
+			else if(song.path != null) {
 				prepareMediaPlayer(mMediaPlayer, song.path);
 			}
 			
@@ -1246,6 +1251,11 @@ public final class PlaybackService extends Service
 	@Override
 	public void onCompletion(MediaPlayer player)
 	{
+
+		// Count this song as played
+		Song song = mTimeline.getSong(0);
+		mPlayCounts.countSong(song);
+
 		if (finishAction(mState) == SongTimeline.FINISH_REPEAT_CURRENT) {
 			setCurrentSong(0);
 		} else if (finishAction(mState) == SongTimeline.FINISH_STOP_CURRENT) {
@@ -1292,36 +1302,6 @@ public final class PlaybackService extends Service
 			} else if (Intent.ACTION_SCREEN_ON.equals(action)) {
 				userActionTriggered();
 			}
-		}
-	}
-
-	private class InCallListener extends PhoneStateListener {
-		@Override
-		public void onCallStateChanged(int state, String incomingNumber)
-		{
-			switch (state) {
-			case TelephonyManager.CALL_STATE_RINGING:
-			case TelephonyManager.CALL_STATE_OFFHOOK: {
-				MediaButtonReceiver.setInCall(true);
-
-				if (!mPlayingBeforeCall) {
-					synchronized (mStateLock) {
-						if (mPlayingBeforeCall = (mState & FLAG_PLAYING) != 0)
-							unsetFlag(FLAG_PLAYING);
-					}
-				}
-				break;
-			}
-			case TelephonyManager.CALL_STATE_IDLE: {
-				MediaButtonReceiver.setInCall(false);
-
-				if (mPlayingBeforeCall) {
-					setFlag(FLAG_PLAYING);
-					mPlayingBeforeCall = false;
-				}
-				break;
-			}
-		}
 		}
 	}
 

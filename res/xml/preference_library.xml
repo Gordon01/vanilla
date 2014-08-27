@@ -54,5 +54,4 @@ THE SOFTWARE.
 			android:targetPackage="su.thinkdifferent.vanilla"
 			android:targetClass="ch.blinkenlights.android.vanilla.FilebrowserStartActivity" />
 	</PreferenceScreen>
-	<ch.blinkenlights.android.vanilla.ScanPreference />
 </PreferenceScreen>
