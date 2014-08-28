@@ -47,7 +47,6 @@
   <string name="remove">Remover</string>
   <string name="clear_search">Apagar procura</string>
   <string name="play_or_enqueue">Colocar na fila ou reproduzir se parado</string>
-  <string name="deleted">%s eliminada</string>
   <string name="delete_file_failed">Falha ao eliminar %s</string>
   <string name="artists">Artistas</string>
   <string name="albums">Álbuns</string>

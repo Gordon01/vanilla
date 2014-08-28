@@ -36,7 +36,6 @@
   <string name="done">Hecho</string>
   <string name="remove">Quitar</string>
   <string name="clear_search">Borrar búsqueda</string>
-  <string name="deleted">%s eliminada.</string>
   <string name="delete_file_failed">Error al eliminar %s.</string>
   <string name="artists">Artistas</string>
   <string name="albums">Álbumes</string>

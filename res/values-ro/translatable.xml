@@ -36,7 +36,6 @@
   <string name="done">Gata</string>
   <string name="remove">Eliminare</string>
   <string name="clear_search">Sterge căutare</string>
-  <string name="deleted">%s sters.</string>
   <string name="delete_file_failed">Nu am reuşit să şterg %s.</string>
   <string name="artists">Artişti</string>
   <string name="albums">Albume</string>

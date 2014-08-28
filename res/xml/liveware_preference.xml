@@ -2,21 +2,21 @@
 <PreferenceScreen
     xmlns:android="http://schemas.android.com/apk/res/android">
 
-<!--     Border -->
-<!--     <CheckBoxPreference -->
-<!--         android:key="@string/preference_key_border" -->
-<!--         android:summary="@string/preference_summary_border" -->
-<!--         android:title="@string/preference_option_border" /> -->
+	<!-- Border -->
+    <CheckBoxPreference
+        android:key="@string/preference_key_border"
+        android:summary="@string/preference_summary_border"
+        android:title="@string/preference_option_border" />
     <!-- Autoplay -->
     <CheckBoxPreference
         android:key="@string/preference_key_autoplay"
         android:summary="@string/preference_summary_autoplay"
         android:title="@string/preference_option_autoplay" />
-<!--     Powersave -->
-<!--     <CheckBoxPreference -->
-<!--         android:key="@string/preference_key_powersave" -->
-<!--         android:summary="@string/preference_summary_powersave" -->
-<!--         android:title="@string/preference_option_powersave" /> -->
+	<!-- Powersave -->
+    <CheckBoxPreference
+        android:key="@string/preference_key_powersave"
+        android:summary="@string/preference_summary_powersave"
+        android:title="@string/preference_option_powersave" />
     <!-- Swipe action -->
     <PreferenceScreen
             android:key="@string/preference_key_swipe"

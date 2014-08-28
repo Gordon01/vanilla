@@ -45,16 +45,9 @@ Copyright (c) 2011-2013, Sony Mobile Communications AB
 
 package su.thinkdifferent.vanilla;
 
-import android.app.AlertDialog;
-import android.app.Dialog;
-import android.content.DialogInterface;
-import android.content.DialogInterface.OnClickListener;
 import android.os.Bundle;
-import android.preference.Preference;
 import android.preference.PreferenceFragment;
-import android.preference.Preference.OnPreferenceClickListener;
 import android.preference.PreferenceActivity;
-import android.util.Log;
 
 /**
  * The sample control preference activity handles the preferences for the sample
@@ -62,7 +55,7 @@ import android.util.Log;
  */
 public class SWPreferenceActivity extends PreferenceActivity {
 
-    private static final int DIALOG_READ_ME = 1;
+//    private static final int DIALOG_READ_ME = 1;
 
     @SuppressWarnings("deprecation")
     @Override
@@ -94,40 +87,40 @@ public class SWPreferenceActivity extends PreferenceActivity {
 		}
 	}
 
-    @Override
-    protected Dialog onCreateDialog(int id) {
-        Dialog dialog = null;
-
-        switch (id) {
-            case DIALOG_READ_ME:
-                dialog = createReadMeDialog();
-                break;
-            default:
-                Log.w(SWExtensionService.LOG_TAG, "Not a valid dialog id: " + id);
-                break;
-        }
-
-        return dialog;
-    }
-
-    /**
-     * Create the Read me dialog
-     *
-     * @return the Dialog
-     */
-    private Dialog createReadMeDialog() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setMessage(R.string.preference_option_read_me_txt)
-                .setTitle(R.string.preference_option_read_me)
-                .setIcon(android.R.drawable.ic_dialog_info)
-                .setPositiveButton(android.R.string.ok, new OnClickListener() {
-
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        dialog.cancel();
-                    }
-                });
-        return builder.create();
-    }
+//    @Override
+//    protected Dialog onCreateDialog(int id) {
+//        Dialog dialog = null;
+//
+//        switch (id) {
+//            case DIALOG_READ_ME:
+//                dialog = createReadMeDialog();
+//                break;
+//            default:
+//                Log.w(SWExtensionService.LOG_TAG, "Not a valid dialog id: " + id);
+//                break;
+//        }
+//
+//        return dialog;
+//    }
+//
+//    /**
+//     * Create the Read me dialog
+//     *
+//     * @return the Dialog
+//     */
+//    private Dialog createReadMeDialog() {
+//        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+//        builder.setMessage(R.string.preference_option_read_me_txt)
+//                .setTitle(R.string.preference_option_read_me)
+//                .setIcon(android.R.drawable.ic_dialog_info)
+//                .setPositiveButton(android.R.string.ok, new OnClickListener() {
+//
+//                    @Override
+//                    public void onClick(DialogInterface dialog, int which) {
+//                        dialog.cancel();
+//                    }
+//                });
+//        return builder.create();
+//    }
 
 }

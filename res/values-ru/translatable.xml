@@ -38,9 +38,10 @@
   <string name="edit">Изменить</string>
   <string name="rename">Переименовать</string>
   <string name="add_to_playlist">Добавить в плейлист…</string>
-  <string name="new_playlist">Новый плейлист...</string>
+  <string name="new_playlist">Новый плейлист…</string>
   <string name="expand">Развернуть</string>
   <string name="delete">Удалить</string>
+  <string name="share">Поделиться</string>
   <string name="playback_view">Сейчас играет</string>
   <string name="sort_by">Сортировать по</string>
   <string name="search">Поиск</string>
@@ -50,13 +51,15 @@
   <string name="play_or_enqueue">Добавить в очередь при воспроизведении; Воспроизвести если приостановлена</string>
   <string name="deleted">%s удалено.</string>
   <string name="delete_file_failed">Ошибка при удалении %s.</string>
-  <string name="remote_lib">Сервер</string>
+  
   <string name="artists">Исполнители</string>
   <string name="albums">Альбомы</string>
   <string name="songs">Песни</string>
   <string name="playlists">Плейлисты</string>
   <string name="genres">Жанры</string>
   <string name="files">Файлы</string>
+  <string name="remote_lib">Сервер</string>
+  
   <string name="none">Нет</string>
   <string name="unknown">Неизвестный</string>
   <string name="play_all">Воспроизвести всё</string>
@@ -190,13 +193,9 @@
   
   	<!-- Strings for LiveWare Extension: -->
   	<string name="smartwatch">Настройки SmartWatch</string>
-    <!-- Title of preference activity -->
     <string name="preference_activity_title">Настройки SmartVanilla Music</string>
-    <!-- Name of extension, shown in preferences -->
     <string name="extension_name">SmartVanilla Music</string>
-    <!-- Configuration title shown in preferences -->
     <string name="configuration_text">Настройки SmartVanilla Music</string>
-    <!-- Menu option shown in preferences -->
     <string name="preference_option_read_me">Информация</string>
     <string name="preference_option_border">Рамка обложки</string>
     <string name="preference_summary_border">Только для SmartWatch 2</string>
@@ -217,6 +216,4 @@
 	   <item>Увеличить громкость</item>
 	   <item>Уменьшить громкость</item>
 	</string-array>
-    <!-- Read me text shown in dialog -->
-    <string name="preference_option_read_me_txt">Свайп вверх или вправо увеличивает громкость, вниз или влево - уменьшает.</string>
 </resources>

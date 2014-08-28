@@ -45,7 +45,6 @@
   <string name="done">Wykonano</string>
   <string name="remove">Usuń</string>
   <string name="clear_search">Wyczyść wyszukiwanie</string>
-  <string name="deleted">%s usunięto.</string>
   <string name="delete_file_failed">Nie można usunąć %s.</string>
   <string name="artists">Artyści</string>
   <string name="albums">Albumy</string>

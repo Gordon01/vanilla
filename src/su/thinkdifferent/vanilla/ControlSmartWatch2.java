@@ -61,6 +61,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 
+import ch.blinkenlights.android.vanilla.FullPlaybackActivity;
 import ch.blinkenlights.android.vanilla.PlaybackService;
 import ch.blinkenlights.android.vanilla.Song;
 
@@ -90,7 +91,15 @@ public final class ControlSmartWatch2 extends ControlExtension {
 		{ R.drawable.sw_rnd_off, R.drawable.sw_rnd_active, R.drawable.sw_rnd_album_active };
     private static final int[] FINISH_ICONS =
 		{ R.drawable.sw_rpt_off, R.drawable.sw_rpt_active, R.drawable.sw_rpt_current_active, R.drawable.sw_rpt_stop_current_active, R.drawable.sw_rpt_random_active };
-
+    private static final int[] BW_SHUFFLE_ICONS =
+		{ R.drawable.bw_rnd_off, R.drawable.bw_rnd_active, R.drawable.bw_rnd_album_active };
+    private static final int[] BW_FINISH_ICONS =
+		{ R.drawable.bw_rpt_off, R.drawable.bw_rpt_active, R.drawable.bw_rpt_current_active, R.drawable.bw_rpt_stop_current_active, R.drawable.bw_rpt_random_active };
+    private static final String[] SHUFFLE_ICONS_STRING =
+		{ "rnd_off", "rnd_active", "rnd_album_active" };
+    private static final String[] FINISH_ICONS_STRING =
+		{ "rpt_off", "rpt_active", "rpt_current_active", "rpt_stop_current_active", "rpt_random_active" };
+   
     private Handler mHandler;
 
     private ControlViewGroup mLayout = null;
@@ -103,6 +112,7 @@ public final class ControlSmartWatch2 extends ControlExtension {
     Bundle[] mMenuItemsText = new Bundle[3];
     Bundle[] mMenuItemsIcons = new Bundle[3];
     boolean isRegistered = false;
+    boolean mPowersave = false;
     
     //Previous song, mediaplayer state and cover. Used to detect what is changed on update
     Song pSong = null;
@@ -270,11 +280,21 @@ public final class ControlSmartWatch2 extends ControlExtension {
 	        pCover = cover;
 		} else {
 			Log.d(SWExtensionService.LOG_TAG, "PlaybackService does not exist. Starting it.");
-        	mContext.startService(new Intent(mContext, PlaybackService.class));
+			Intent intent = new Intent(mContext, FullPlaybackActivity.class);
+			intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+			mContext.startActivity(intent);
+			//Sometimes it is VERY slow so I decided to start activity
+//        	mContext.startService(new Intent(mContext, PlaybackService.class));
 		}
 		
-		showLayout(R.layout.sw_control_2, data);
-		
+		//Decide what layout to show
+	    Boolean altLayout = mPrefs.getBoolean(
+	    mContext.getString(R.string.preference_key_border), false);
+	    if (altLayout)
+	    	showLayout(R.layout.sw_control_2, data);
+	    else
+	    	showLayout(R.layout.sw_control_2_alt, data);
+	    
 		//It's better to send image after showing layout because it speed up loading (but very slightly).
 		//But sending cover with Bundle is also possible. 
 		if (cover != null) {
@@ -337,28 +357,28 @@ public final class ControlSmartWatch2 extends ControlExtension {
 			boolean pPlaying = (pState & PlaybackService.FLAG_PLAYING) != 0;
 			if (pPlaying != mCurrentIsPlaying) {
 				if (mCurrentIsPlaying) {
-					sendImage(R.id.play, R.drawable.sw_pause);
+					updateActionButton(R.id.play, "pause");
 				} else {
-					sendImage(R.id.play, R.drawable.sw_play);
+					updateActionButton(R.id.play, "play");
 				}
 			}
 			
 			//Check if shuffle state changed
 			int pShuffle = PlaybackService.shuffleMode(pState);
 			if (pShuffle != shuffle) {
-				sendImage(R.id.sw_shuffle, SHUFFLE_ICONS[shuffle]);
+				updateActionButton(R.id.sw_shuffle, SHUFFLE_ICONS_STRING[shuffle]);
 			}
 			
 			//Check if finish action changed
 			int pFinish = PlaybackService.finishAction(pState);
 			if (pFinish != finish) {
-				sendImage(R.id.sw_repeat, FINISH_ICONS[finish]);
+				updateActionButton(R.id.sw_repeat, FINISH_ICONS_STRING[finish]);
 			}
 		}
 		
 		//Cover is updated last bacause it result plugin to look more responsive.
 		//Check if cover is updated
-		if (pCover != cover) {
+		if ((pCover != cover) && (mPowersave == false)) {
 			if (cover != null) {
 				sendImage(R.id.album_cover, cover);
 			} else {
@@ -417,6 +437,20 @@ public final class ControlSmartWatch2 extends ControlExtension {
         }
     }
     
+    public void updateActionButton(final int layoutReference, String button) {
+    	int resourceId;
+    	if (mPowersave) {
+    		//B/W Image:
+    		resourceId = mContext.getResources().getIdentifier("bw_"+button, "drawable", mContext.getPackageName());
+    		sendImage(layoutReference, resourceId);
+    	}
+    	else {
+    		//Colour Image:
+    		resourceId = mContext.getResources().getIdentifier("sw_"+button, "drawable", mContext.getPackageName());
+    		sendImage(layoutReference, resourceId);
+    	}
+    }
+    
     public void handleSwipe(String action) {
     	Log.d(SWExtensionService.LOG_TAG, "Handling swipe: " + action);
     	AudioManager mAudioManager = (AudioManager)mContext.getSystemService(PlaybackService.AUDIO_SERVICE);
@@ -438,9 +472,116 @@ public final class ControlSmartWatch2 extends ControlExtension {
     @Override
     public void onActiveLowPowerModeChange(boolean lowPowerModeOn) {
     	Log.d(SWExtensionService.LOG_TAG, "Low power mode changed " + lowPowerModeOn);
-//        Boolean action = mPrefs.getBoolean(
-//                mContext.getString(R.string.preference_key_powersave), false);
-        //TODO: Change layout here to powersave one
+    	
+        Boolean action = mPrefs.getBoolean(
+                mContext.getString(R.string.preference_key_powersave), false);
+        if (!action) {
+        	Intent intent = new Intent(Control.Intents.CONTROL_STOP_REQUEST_INTENT);
+            sendToHostApp(intent);
+        }
+        
+        Bundle[] data = new Bundle[5];
+       
+        if (lowPowerModeOn) {
+        	//Extension goes to powersave mode - prepare and show B/W layout
+        	mPowersave = true;
+        	
+        	Bundle b1 = new Bundle();
+	        b1.putInt(Control.Intents.EXTRA_LAYOUT_REFERENCE, R.id.artist);
+	        b1.putString(Control.Intents.EXTRA_TEXT, pSong.artist);
+	
+	        Bundle b2 = new Bundle();
+	        b2.putInt(Control.Intents.EXTRA_LAYOUT_REFERENCE, R.id.track);
+	        b2.putString(Control.Intents.EXTRA_TEXT, pSong.title);
+	        
+	        Bundle b3 = new Bundle();
+	        b3.putInt(Control.Intents.EXTRA_LAYOUT_REFERENCE, R.id.play);
+			if (mCurrentIsPlaying) {
+				b3.putString(Control.Intents.EXTRA_DATA_URI, 
+		        		ExtensionUtils.getUriString(mContext, R.drawable.bw_pause));
+			} else {
+				b3.putString(Control.Intents.EXTRA_DATA_URI, 
+		        		ExtensionUtils.getUriString(mContext, R.drawable.bw_play));
+			}
+			
+			int shuffle = PlaybackService.shuffleMode(pState);
+			int finish = PlaybackService.finishAction(pState);
+			
+	        Bundle b4 = new Bundle();
+	        b4.putInt(Control.Intents.EXTRA_LAYOUT_REFERENCE, R.id.sw_shuffle);
+	        b4.putString(Control.Intents.EXTRA_DATA_URI, 
+	        		ExtensionUtils.getUriString(mContext, BW_SHUFFLE_ICONS[shuffle]));
+	        
+	        Bundle b5 = new Bundle();
+	        b5.putInt(Control.Intents.EXTRA_LAYOUT_REFERENCE, R.id.sw_repeat);
+	        b5.putString(Control.Intents.EXTRA_DATA_URI, 
+	        		ExtensionUtils.getUriString(mContext, BW_FINISH_ICONS[finish]));
+	
+	        data[0] = b1;
+	        data[1] = b2;
+	        data[2] = b3;
+	        data[3] = b4;
+	        data[4] = b5;
+        	
+        	showLayout(R.layout.sw_control_2_powersave, data);
+        }
+        else {
+        	//Extension exits powersave mode - prepare and show normal layout
+        	mPowersave = false;
+        	
+        	Bundle b1 = new Bundle();
+	        b1.putInt(Control.Intents.EXTRA_LAYOUT_REFERENCE, R.id.artist);
+	        b1.putString(Control.Intents.EXTRA_TEXT, pSong.artist);
+	
+	        Bundle b2 = new Bundle();
+	        b2.putInt(Control.Intents.EXTRA_LAYOUT_REFERENCE, R.id.track);
+	        b2.putString(Control.Intents.EXTRA_TEXT, pSong.title);
+	        
+	        //This trick is inspired by the way how ControlExtension.sendImage() works
+	        Bundle b3 = new Bundle();
+	        b3.putInt(Control.Intents.EXTRA_LAYOUT_REFERENCE, R.id.play);
+			if (mCurrentIsPlaying) {
+				b3.putString(Control.Intents.EXTRA_DATA_URI, 
+		        		ExtensionUtils.getUriString(mContext, R.drawable.sw_pause));
+			} else {
+				b3.putString(Control.Intents.EXTRA_DATA_URI, 
+		        		ExtensionUtils.getUriString(mContext, R.drawable.sw_play));
+			}
+			
+			int shuffle = PlaybackService.shuffleMode(pState);
+			int finish = PlaybackService.finishAction(pState);
+			
+	        Bundle b4 = new Bundle();
+	        b4.putInt(Control.Intents.EXTRA_LAYOUT_REFERENCE, R.id.sw_shuffle);
+	        b4.putString(Control.Intents.EXTRA_DATA_URI, 
+	        		ExtensionUtils.getUriString(mContext, SHUFFLE_ICONS[shuffle]));
+	        
+	        Bundle b5 = new Bundle();
+	        b5.putInt(Control.Intents.EXTRA_LAYOUT_REFERENCE, R.id.sw_repeat);
+	        b5.putString(Control.Intents.EXTRA_DATA_URI, 
+	        		ExtensionUtils.getUriString(mContext, FINISH_ICONS[finish]));
+	
+	        data[0] = b1;
+	        data[1] = b2;
+	        data[2] = b3;
+	        data[3] = b4;
+	        data[4] = b5;
+        	
+			//Decide what layout to show
+		    Boolean altLayout = mPrefs.getBoolean(
+		    mContext.getString(R.string.preference_key_border), false);
+		    if (altLayout)
+		    	showLayout(R.layout.sw_control_2, data);
+		    else
+		    	showLayout(R.layout.sw_control_2_alt, data);
+        	
+    		if (pCover != null) {
+    			sendImage(R.id.album_cover, pCover);
+    		} else {
+    			sendImage(R.id.album_cover, R.drawable.fallback_cover);
+    		}	
+        }
+        	
     }
 
     @Override

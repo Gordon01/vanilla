@@ -77,7 +77,7 @@ THE SOFTWARE.
 	<string name="remove">Remove</string>
 	<string name="clear_search">Clear search</string>
 	<string name="play_or_enqueue">Enqueue if playing; Play if paused</string>
-
+	<string name="deleted">%s deleted.</string>
 	<plurals name="playing">
 		<item quantity="one">1 song playing.</item>
 		<item quantity="other">%d songs playing.</item>
@@ -105,6 +105,7 @@ THE SOFTWARE.
 	<string name="playlists">Playlists</string>
 	<string name="genres">Genres</string>
 	<string name="files">Files</string>
+	<string name="remote_lib">Server</string>
 
 	<string name="none">None</string>
 	<string name="unknown">Unknown</string>
@@ -283,7 +284,7 @@ THE SOFTWARE.
     <string name="preference_option_autoplay">Autoplay</string>
     <string name="preference_summary_autoplay">Start playing on song change</string>
     <string name="preference_option_powersave">Powersave</string>
-    <string name="preference_summary_powersave">Let the screen off</string>
+    <string name="preference_summary_powersave">Let the screen dim. Without this option the extension will shut down.</string>
     <string name="preference_option_swipe">Swipe settings</string>
     <string name="preference_option_swipe_up">Up swipe</string>
     <string name="preference_option_swipe_right">Right swipe</string>
@@ -305,7 +306,5 @@ THE SOFTWARE.
 	   <item>vol_up</item>
 	   <item>vol_down</item>
 	</string-array>
-	
-    <!-- Text drawn in control on Smart Wireless Headset pro-->
-    <string name="sample_control_headset_pro_text">Press Prev or Next</string>
+	<string name="sample_control_headset_pro_text">dummy</string>
 </resources>

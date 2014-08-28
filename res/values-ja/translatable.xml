@@ -47,7 +47,6 @@
   <string name="remove">削除</string>
   <string name="clear_search">検索をクリア</string>
   <string name="play_or_enqueue">再生中はキューに追加、一時停止中は再生する</string>
-  <string name="deleted">%sを削除しました。</string>
   <string name="delete_file_failed">%sを削除できませんでした。</string>
   <string name="artists">アーティスト</string>
   <string name="albums">アルバム</string>

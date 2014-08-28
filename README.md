@@ -7,6 +7,7 @@ Vanilla Music player is an MP3/OGG/FLAC/PCM player for Android with the followin
 * accelerometer/shake control
 * cover art support
 * [ScrobbleDroid](https://code.google.com/p/scrobbledroid/) support for Last.fm integration
+* Sony SmartWatch native support
 
 Translating
 ===========
