@@ -32,6 +32,7 @@ import java.util.Random;
 
 import junit.framework.Assert;
 import android.content.ContentResolver;
+import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Environment;
@@ -487,6 +488,24 @@ public class MediaUtils {
 			}
 		}
 		return file.delete();
+	}
+	
+	/**
+	 * Create the intent to share given audio URIs. 
+	 */
+	public static Intent createShareIntent(ArrayList<Uri> shareUri)
+	{
+		 Intent shareIntent = new Intent();
+	        if (shareUri.size() == 1) {
+	            shareIntent.setAction(Intent.ACTION_SEND);
+	            shareIntent.putExtra(Intent.EXTRA_STREAM, shareUri.get(0));
+		        shareIntent.setType("audio/*");
+	        } else {
+	            shareIntent.setAction(Intent.ACTION_SEND_MULTIPLE);
+	            shareIntent.putParcelableArrayListExtra(Intent.EXTRA_STREAM, shareUri);
+		        shareIntent.setType("*/*");
+	        }
+	    return shareIntent;
 	}
 
 
