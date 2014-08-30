@@ -43,7 +43,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package su.thinkdifferent.vanilla;
 
-import ch.blinkenlights.android.vanilla.PlaybackService;
 import android.graphics.Bitmap;
 
 /**

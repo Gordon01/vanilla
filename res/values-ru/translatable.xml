@@ -204,7 +204,6 @@
     <string name="preference_option_autoplay">Автовоспроизведение</string>
     <string name="preference_summary_autoplay">Начинать воспроизведение при переключении песен</string>
     <string name="preference_option_powersave">Энергосбережение</string>
-    <string name="preference_summary_powersave">Позволить экрану часов переходить в режим энергосбережения, вместо отключения</string>
     <string name="preference_option_swipe">Настройка жестов</string>
     <string name="preference_option_swipe_up">Жест вверх</string>
     <string name="preference_option_swipe_right">Жест вправо</string>
@@ -217,5 +216,11 @@
 	   <item>Предыдущая песня (авто)</item>
 	   <item>Увеличить громкость</item>
 	   <item>Уменьшить громкость</item>
+	</string-array>
+	<string-array name="preference_array_powersave_str">
+	   <item>Отключено</item>
+	   <item>Обычное</item>
+	   <item>Всегда вкл.</item>
+	   <item>Всегда выкл.</item>
 	</string-array>
 </resources>

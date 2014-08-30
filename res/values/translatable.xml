@@ -286,7 +286,6 @@ THE SOFTWARE.
     <string name="preference_option_autoplay">Autoplay</string>
     <string name="preference_summary_autoplay">Start playing on song change</string>
     <string name="preference_option_powersave">Powersave</string>
-    <string name="preference_summary_powersave">Let the screen dim. Without this option the extension will shut down.</string>
     <string name="preference_option_swipe">Swipe settings</string>
     <string name="preference_option_swipe_up">Up swipe</string>
     <string name="preference_option_swipe_right">Right swipe</string>
@@ -307,6 +306,18 @@ THE SOFTWARE.
 	   <item>prev_auto</item>
 	   <item>vol_up</item>
 	   <item>vol_down</item>
+	</string-array>
+	<string-array name="preference_array_powersave_str">
+	   <item>Off</item>
+	   <item>Automatic</item>
+	   <item>Always on</item>
+	   <item>Always off</item>
+	</string-array>
+	<string-array name="preference_array_powersave_val">
+	   <item>off</item>
+	   <item>auto</item>
+	   <item>always_on</item>
+	   <item>always_off</item>
 	</string-array>
 	<string name="sample_control_headset_pro_text">dummy</string>
 </resources>

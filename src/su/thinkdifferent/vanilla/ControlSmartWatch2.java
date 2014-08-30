@@ -69,6 +69,7 @@ import com.sonyericsson.extras.liveware.aef.control.Control;
 import com.sonyericsson.extras.liveware.extension.util.ExtensionUtils;
 import com.sonyericsson.extras.liveware.extension.util.control.ControlExtension;
 import com.sonyericsson.extras.liveware.extension.util.control.ControlObjectClickEvent;
+import com.sonyericsson.extras.liveware.extension.util.control.ControlTouchEvent;
 import com.sonyericsson.extras.liveware.extension.util.control.ControlView;
 import com.sonyericsson.extras.liveware.extension.util.control.ControlView.OnClickListener;
 import com.sonyericsson.extras.liveware.extension.util.control.ControlViewGroup;
@@ -221,6 +222,11 @@ public final class ControlSmartWatch2 extends ControlExtension {
     	    	
     	//Setting preference var. We need to read settings in many places
 		mPrefs = PreferenceManager.getDefaultSharedPreferences(mContext);
+		
+        String pref = mPrefs.getString(
+                mContext.getString(R.string.preference_key_powersave), "off");
+    	if (pref.equals("always_on"))
+    		setScreenState(Control.Intents.SCREEN_STATE_ON);
     	
 		Song song = null;
 		Bitmap cover = null;
@@ -369,8 +375,15 @@ public final class ControlSmartWatch2 extends ControlExtension {
 			//Cover is updated last bacause it result plugin to look more responsive.
 			//Check if cover is updated
 			Bitmap cover = song.getCover(mContext);	
-			if ((pCover != cover) && (mPowersave == false)) 
-				sendImage(R.id.album_cover, cover);
+			if (mPowersave == false) {
+				if (pCover != cover) {
+					if (cover != null) {
+						sendImage(R.id.album_cover, cover);
+					} else {
+						sendImage(R.id.album_cover, R.drawable.fallback_cover);
+					}
+				}
+			}
 			pCover = cover;
 		}
 		
@@ -423,18 +436,16 @@ public final class ControlSmartWatch2 extends ControlExtension {
         }
     }
     
-    public void updateActionButton(final int layoutReference, String button) {
-    	int resourceId;
-    	if (mPowersave) {
-    		//B/W Image:
-    		resourceId = mContext.getResources().getIdentifier("bw_"+button, "drawable", mContext.getPackageName());
-    		sendImage(layoutReference, resourceId);
-    	}
-    	else {
-    		//Colour Image:
-    		resourceId = mContext.getResources().getIdentifier("sw_"+button, "drawable", mContext.getPackageName());
-    		sendImage(layoutReference, resourceId);
-    	}
+    @Override
+    public void onTouch(final ControlTouchEvent event) {
+        int action = event.getAction();
+        String pref = mPrefs.getString(
+                mContext.getString(R.string.preference_key_powersave), "off");
+        if (action == Control.Intents.TOUCH_ACTION_LONGPRESS) {
+        	if ((mPowersave) && (pref.equals("always_off"))) {
+        		setScreenState(Control.Intents.SCREEN_STATE_AUTO);
+        	}
+        }
     }
     
     public void handleSwipe(String action) {
@@ -459,11 +470,14 @@ public final class ControlSmartWatch2 extends ControlExtension {
     public void onActiveLowPowerModeChange(boolean lowPowerModeOn) {
     	Log.d(SWExtensionService.LOG_TAG, "Low power mode changed " + lowPowerModeOn);
     	
-        Boolean action = mPrefs.getBoolean(
-                mContext.getString(R.string.preference_key_powersave), false);
-        if (!action) {
+        String action = mPrefs.getString(
+                mContext.getString(R.string.preference_key_powersave), "off");
+        
+        if (action.equals("off")) {
         	Intent intent = new Intent(Control.Intents.CONTROL_STOP_REQUEST_INTENT);
             sendToHostApp(intent);
+        } else if ((action.equals("always_off")) && (!mPowersave)) {
+        	setScreenState(Control.Intents.SCREEN_STATE_OFF);
         }
         
         Bundle[] data = new Bundle[5];
@@ -627,8 +641,7 @@ public final class ControlSmartWatch2 extends ControlExtension {
     private void setupClickables(Context context) {
         LayoutInflater inflater = (LayoutInflater) context.getSystemService
                 (Context.LAYOUT_INFLATER_SERVICE);
-        View layout = inflater.inflate(R.layout.sw_control_2
-                , null);
+        View layout = inflater.inflate(R.layout.sw_control_2, null);
         mLayout = (ControlViewGroup) parseLayout(layout);
         if (mLayout != null) {
             ControlView btn_back = mLayout.findViewById(R.id.back);
@@ -644,9 +657,11 @@ public final class ControlSmartWatch2 extends ControlExtension {
                     } else {
                         sendActionToPS(PlaybackService.ACTION_PREVIOUS_SONG);
                     }
-                    sendImage(R.id.back, R.drawable.sw_back_pressed);
-                    mHandler.postDelayed(new SelectToggler(R.id.back,
-                            R.drawable.sw_back), SELECT_TOGGLER_MS);
+                    if (!mPowersave) {
+	                    sendImage(R.id.back, R.drawable.sw_back_pressed);
+	                    mHandler.postDelayed(new SelectToggler(R.id.back,
+	                            "back"), SELECT_TOGGLER_MS);
+                    }
                 }
             });
             
@@ -663,9 +678,11 @@ public final class ControlSmartWatch2 extends ControlExtension {
                     } else {
                         sendActionToPS(PlaybackService.ACTION_NEXT_SONG);
                     }
-                    sendImage(R.id.next, R.drawable.sw_next_pressed);
-                    mHandler.postDelayed(new SelectToggler(R.id.next,
-                            R.drawable.sw_next), SELECT_TOGGLER_MS);
+                    if (!mPowersave) {
+	                    sendImage(R.id.next, R.drawable.sw_next_pressed);
+	                    mHandler.postDelayed(new SelectToggler(R.id.next,
+	                            "next"), SELECT_TOGGLER_MS);
+                    }
                 }
             });
             
@@ -695,14 +712,14 @@ public final class ControlSmartWatch2 extends ControlExtension {
                 public void onClick() {
                 	if (mCurrentIsPlaying) {
 	                    sendActionToPS(PlaybackService.ACTION_TOGGLE_PLAYBACK);
-	                    sendImage(R.id.play, R.drawable.sw_play_pressed);
+	                    updateActionButton(R.id.play, "play_pressed");
 	                    mHandler.postDelayed(new SelectToggler(R.id.play,
-	                            R.drawable.sw_play), SELECT_TOGGLER_MS);
+	                            "play"), SELECT_TOGGLER_MS);
                 	} else {
 	                    sendActionToPS(PlaybackService.ACTION_TOGGLE_PLAYBACK);
-	                    sendImage(R.id.play, R.drawable.sw_pause_pressed);
+	                    updateActionButton(R.id.play, "pause_pressed");
 	                    mHandler.postDelayed(new SelectToggler(R.id.play,
-	                            R.drawable.sw_pause), SELECT_TOGGLER_MS);
+	                            "pause"), SELECT_TOGGLER_MS);
                 	}
                 }
             });
@@ -720,20 +737,34 @@ public final class ControlSmartWatch2 extends ControlExtension {
 			mContext.startService(intent);
 		}
     }
+    
+    public void updateActionButton(final int layoutReference, String button) {
+    	int resourceId;
+    	if (mPowersave) {
+    		//B/W Image:
+    		resourceId = mContext.getResources().getIdentifier("bw_"+button, "drawable", mContext.getPackageName());
+    		sendImage(layoutReference, resourceId);
+    	}
+    	else {
+    		//Colour Image:
+    		resourceId = mContext.getResources().getIdentifier("sw_"+button, "drawable", mContext.getPackageName());
+    		sendImage(layoutReference, resourceId);
+    	}
+    }
 
     private class SelectToggler implements Runnable {
 
         private int mLayoutReference;
-        private int mResourceId;
+        private String mResourceId;
 
-        SelectToggler(int layoutReference, int resourceId) {
+        SelectToggler(int layoutReference, String button) {
             mLayoutReference = layoutReference;
-            mResourceId = resourceId;
+            mResourceId = button;
         }
 
         @Override
         public void run() {
-            sendImage(mLayoutReference, mResourceId);
+        	updateActionButton(mLayoutReference, mResourceId);
         }
 
     }
