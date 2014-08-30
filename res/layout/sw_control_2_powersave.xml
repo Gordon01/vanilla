@@ -24,7 +24,6 @@
         android:layout_alignParentTop="true"
         android:layout_centerHorizontal="true"
         android:gravity="center"
-        android:text="artist"
         android:textColor="@android:color/white"
         android:textSize="@dimen/smart_watch_2_text_size_large" />
 
@@ -35,7 +34,6 @@
         android:layout_below="@+id/artist"
         android:layout_centerHorizontal="true"
         android:gravity="center"
-        android:text="title"
         android:textColor="@android:color/white"
         android:textSize="@dimen/smart_watch_2_text_size_large" />
 

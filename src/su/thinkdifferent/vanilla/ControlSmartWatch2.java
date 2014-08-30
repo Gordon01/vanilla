@@ -117,7 +117,7 @@ public final class ControlSmartWatch2 extends ControlExtension {
     //Previous song, mediaplayer state and cover. Used to detect what is changed on update
     Song pSong = null;
 	Bitmap pCover = null;
-	int pState = 0;
+	int pState = 999;
     
 
     /**
@@ -229,21 +229,28 @@ public final class ControlSmartWatch2 extends ControlExtension {
 		if (PlaybackService.hasInstance()) {     
 			Log.d(SWExtensionService.LOG_TAG, "PlaybackService exists");
 			PlaybackService service = PlaybackService.get(mContext);
-			//TODO:It is possible, that PlaybackService simply don't have song.
-			//So it's need to be handled properly, so no NullPointException.
 			song = service.getSong(0);
-			cover = song.getCover(mContext);
+			
+			Bundle b1 = new Bundle();
+	        Bundle b2 = new Bundle();
+			if (song != null) {
+				cover = song.getCover(mContext);
+				
+		        b1.putInt(Control.Intents.EXTRA_LAYOUT_REFERENCE, R.id.artist);
+		        b1.putString(Control.Intents.EXTRA_TEXT, song.artist);
+		        b2.putInt(Control.Intents.EXTRA_LAYOUT_REFERENCE, R.id.track);
+		        b2.putString(Control.Intents.EXTRA_TEXT, song.title);
+		        
+		        pCover = cover;
+			} else {
+		        b1.putInt(Control.Intents.EXTRA_LAYOUT_REFERENCE, R.id.artist);
+		        b1.putString(Control.Intents.EXTRA_TEXT, mContext.getString(R.string.sw_nosong));
+		        pCover = null;
+			}
+			
 			int state = service.getState();
 			mCurrentIsPlaying = (state & PlaybackService.FLAG_PLAYING) != 0;
 		
-	        Bundle b1 = new Bundle();
-	        b1.putInt(Control.Intents.EXTRA_LAYOUT_REFERENCE, R.id.artist);
-	        b1.putString(Control.Intents.EXTRA_TEXT, song.artist);
-	
-	        Bundle b2 = new Bundle();
-	        b2.putInt(Control.Intents.EXTRA_LAYOUT_REFERENCE, R.id.track);
-	        b2.putString(Control.Intents.EXTRA_TEXT, song.title);
-	        
 	        //This trick is inspired by the way how ControlExtension.sendImage() works
 	        Bundle b3 = new Bundle();
 	        b3.putInt(Control.Intents.EXTRA_LAYOUT_REFERENCE, R.id.play);
@@ -277,7 +284,7 @@ public final class ControlSmartWatch2 extends ControlExtension {
 	        //Updating pre-variables
 	        pSong = song;
 	        pState = state;
-	        pCover = cover;
+
 		} else {
 			Log.d(SWExtensionService.LOG_TAG, "PlaybackService does not exist. Starting it.");
 			Intent intent = new Intent(mContext, FullPlaybackActivity.class);
@@ -312,44 +319,13 @@ public final class ControlSmartWatch2 extends ControlExtension {
 		if (!PlaybackService.hasInstance()) 
 			return;
 			
-		Song song = null;
-		Bitmap cover = null;
-		int shuffle = 0;
-		int finish = 0;
-		int state = 0;
-		
 		//Firstly, we getting current state from PlaybackService
 		PlaybackService service = PlaybackService.get(mContext);
-		song = service.getSong(0);
-		cover = song.getCover(mContext);
-		state = service.getState();
-		shuffle = PlaybackService.shuffleMode(state);
-		finish = PlaybackService.finishAction(state);
-		Log.d(SWExtensionService.LOG_TAG, "State = " + Integer.toString(state));
-		Log.d(SWExtensionService.LOG_TAG, "Shuffle = " + Integer.toString(shuffle));
-		Log.d(SWExtensionService.LOG_TAG, "Finish = " + Integer.toString(finish));
+		Song song = service.getSong(0);
+		int state = service.getState();
+		int shuffle = PlaybackService.shuffleMode(state);
+		int finish = PlaybackService.finishAction(state);
 		mCurrentIsPlaying = (state & PlaybackService.FLAG_PLAYING) != 0;
-	
-		//We just started PlaybackService at onResume. 
-		//TODO: doubling the code. needs optimization.
-		if (pSong == null) {
-			pSong = song;
-			sendText(R.id.artist, song.artist);
-			sendText(R.id.track, song.title);
-			//Dirty hack to force update play/shuffle/final buttons
-			pState = 999;
-		}
-		
-		//Song is a big object so we cheching artist/title individually
-		//Check if artist changed
-		if (pSong.artist != song.artist) {
-	    	sendText(R.id.artist, song.artist);
-		}
-		
-		//Check if title changed
-		if (pSong.title != song.title) {
-			sendText(R.id.track, song.title);
-		}
 		
 		//Globally check is whole state changed
 		if (pState != state) {
@@ -376,21 +352,31 @@ public final class ControlSmartWatch2 extends ControlExtension {
 			}
 		}
 		
-		//Cover is updated last bacause it result plugin to look more responsive.
-		//Check if cover is updated
-		if ((pCover != cover) && (mPowersave == false)) {
-			if (cover != null) {
-				sendImage(R.id.album_cover, cover);
-			} else {
-				sendImage(R.id.album_cover, R.drawable.fallback_cover);
+		if (song == null) {
+			sendImage(R.id.album_cover, R.drawable.fallback_cover);
+			sendText(R.id.artist, mContext.getString(R.string.sw_nosong));
+			pCover = null;
+		} else {
+			//Song is a big object so we cheching artist/title individually
+			//Check if artist changed
+			if ((pSong == null) || (pSong.artist != song.artist)) {
+		    	sendText(R.id.artist, song.artist);
 			}
+			//Check if title changed
+			if ((pSong == null) || (pSong.title != song.title)) {
+				sendText(R.id.track, song.title);
+			}
+			//Cover is updated last bacause it result plugin to look more responsive.
+			//Check if cover is updated
+			Bitmap cover = song.getCover(mContext);	
+			if ((pCover != cover) && (mPowersave == false)) 
+				sendImage(R.id.album_cover, cover);
+			pCover = cover;
 		}
 		
         //Updating pre-variables
         pSong = song;
         pState = state;
-        pCover = cover;
-		
     }
 
     @Override
@@ -486,14 +472,18 @@ public final class ControlSmartWatch2 extends ControlExtension {
         	//Extension goes to powersave mode - prepare and show B/W layout
         	mPowersave = true;
         	
-        	Bundle b1 = new Bundle();
-	        b1.putInt(Control.Intents.EXTRA_LAYOUT_REFERENCE, R.id.artist);
-	        b1.putString(Control.Intents.EXTRA_TEXT, pSong.artist);
-	
+			Bundle b1 = new Bundle();
 	        Bundle b2 = new Bundle();
-	        b2.putInt(Control.Intents.EXTRA_LAYOUT_REFERENCE, R.id.track);
-	        b2.putString(Control.Intents.EXTRA_TEXT, pSong.title);
-	        
+			if (pSong != null) {		
+		        b1.putInt(Control.Intents.EXTRA_LAYOUT_REFERENCE, R.id.artist);
+		        b1.putString(Control.Intents.EXTRA_TEXT, pSong.artist);
+		        b2.putInt(Control.Intents.EXTRA_LAYOUT_REFERENCE, R.id.track);
+		        b2.putString(Control.Intents.EXTRA_TEXT, pSong.title);
+			} else {
+		        b1.putInt(Control.Intents.EXTRA_LAYOUT_REFERENCE, R.id.artist);
+		        b1.putString(Control.Intents.EXTRA_TEXT, mContext.getString(R.string.sw_nosong));
+			}
+        	        
 	        Bundle b3 = new Bundle();
 	        b3.putInt(Control.Intents.EXTRA_LAYOUT_REFERENCE, R.id.play);
 			if (mCurrentIsPlaying) {
@@ -529,13 +519,17 @@ public final class ControlSmartWatch2 extends ControlExtension {
         	//Extension exits powersave mode - prepare and show normal layout
         	mPowersave = false;
         	
-        	Bundle b1 = new Bundle();
-	        b1.putInt(Control.Intents.EXTRA_LAYOUT_REFERENCE, R.id.artist);
-	        b1.putString(Control.Intents.EXTRA_TEXT, pSong.artist);
-	
+			Bundle b1 = new Bundle();
 	        Bundle b2 = new Bundle();
-	        b2.putInt(Control.Intents.EXTRA_LAYOUT_REFERENCE, R.id.track);
-	        b2.putString(Control.Intents.EXTRA_TEXT, pSong.title);
+			if (pSong != null) {		
+		        b1.putInt(Control.Intents.EXTRA_LAYOUT_REFERENCE, R.id.artist);
+		        b1.putString(Control.Intents.EXTRA_TEXT, pSong.artist);
+		        b2.putInt(Control.Intents.EXTRA_LAYOUT_REFERENCE, R.id.track);
+		        b2.putString(Control.Intents.EXTRA_TEXT, pSong.title);
+			} else {
+		        b1.putInt(Control.Intents.EXTRA_LAYOUT_REFERENCE, R.id.artist);
+		        b1.putString(Control.Intents.EXTRA_TEXT, mContext.getString(R.string.sw_nosong));
+			}
 	        
 	        //This trick is inspired by the way how ControlExtension.sendImage() works
 	        Bundle b3 = new Bundle();

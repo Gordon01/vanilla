@@ -196,6 +196,8 @@
     <string name="preference_activity_title">Настройки SmartVanilla Music</string>
     <string name="extension_name">SmartVanilla Music</string>
     <string name="configuration_text">Настройки SmartVanilla Music</string>
+    <string name="sw_nosong">Не выбрана песня</string>
+    <string name="sw_loading">Загрузка…</string>
     <string name="preference_option_read_me">Информация</string>
     <string name="preference_option_border">Рамка обложки</string>
     <string name="preference_summary_border">Только для SmartWatch 2</string>

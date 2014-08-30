@@ -277,6 +277,8 @@ THE SOFTWARE.
     <string name="preference_activity_title">SmartVanilla Music settings</string>
     <string name="extension_name">SmartVanilla Music</string>
     <string name="configuration_text">SmartVanilla Music settings</string>
+    <string name="sw_nosong">No song selected</string>
+    <string name="sw_loading">Loading…</string>
     <string name="preference_option_read_me">READ ME</string>
     <string name="preference_option_read_me_txt">Swipe up or right to increase volume; down or left to decrease</string>
 	<string name="preference_option_border">Show border</string>
