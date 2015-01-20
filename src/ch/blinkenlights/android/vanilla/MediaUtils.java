@@ -29,6 +29,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Vector;
+import java.util.zip.CRC32;
 
 import junit.framework.Assert;
 import android.content.ContentResolver;
@@ -37,7 +39,10 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.database.MatrixCursor;
+import android.media.MediaMetadataRetriever;
 import android.util.Log;
+
 
 /**
  * Provides some static Song/MediaStore-related utility functions.
@@ -89,6 +94,11 @@ public class MediaUtils {
 	public static final String DEFAULT_SORT = "artist_key,album_key,track";
 
 	/**
+	 * The default sort order for albums. First the album, then tracknumber
+	 */
+	public static final String ALBUM_SORT = "album_key,track";
+
+	/**
 	 * Cached random instance.
 	 */
 	private static Random sRandom;
@@ -136,6 +146,7 @@ public class MediaUtils {
 	{
 		Uri media = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
 		StringBuilder selection = new StringBuilder();
+		String sort = DEFAULT_SORT;
 
 		switch (type) {
 		case TYPE_SONG:
@@ -146,6 +157,7 @@ public class MediaUtils {
 			break;
 		case TYPE_ALBUM:
 			selection.append(MediaStore.Audio.Media.ALBUM_ID);
+			sort = ALBUM_SORT;
 			break;
 		default:
 			throw new IllegalArgumentException("Invalid type specified: " + type);
@@ -160,7 +172,7 @@ public class MediaUtils {
 			selection.append(select);
 		}
 
-		QueryTask result = new QueryTask(media, projection, selection.toString(), null, DEFAULT_SORT);
+		QueryTask result = new QueryTask(media, projection, selection.toString(), null, sort);
 		result.type = type;
 		return result;
 	}
@@ -569,10 +581,58 @@ public class MediaUtils {
 		final String query = "_data LIKE ? AND is_music";
 		String[] qargs = { path };
 
-		Log.d("VanillaMusic", "Running buildFileQuery for "+query+" with ARG="+qargs[0]);
 		Uri media = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
 		QueryTask result = new QueryTask(media, projection, query, qargs, DEFAULT_SORT);
 		result.type = TYPE_FILE;
 		return result;
 	}
+
+	/**
+	 * Returns a (possibly empty) Cursor for given file path
+	 * @param path The path to the file to be queried
+	 * @return A new Cursor object
+	 * */
+	public static Cursor getCursorForFileQuery(String path) {
+		MatrixCursor matrixCursor = new MatrixCursor(Song.FILLED_PROJECTION);
+		MediaMetadataRetriever data = new MediaMetadataRetriever();
+
+		try {
+			data.setDataSource(path);
+		} catch (Exception e) {
+				Log.w("VanillaMusic", "Failed to extract metadata from " + path);
+		}
+
+		String title = data.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE);
+		String album = data.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM);
+		String artist = data.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST);
+		String duration = data.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
+
+		if (duration != null) { // looks like we will be able to play this file
+			// Vanilla requires each file to be identified by its unique id in the media database.
+			// However: This file is not in the database, so we are going to roll our own
+			// using the negative crc32 sum of the path value. While this is not perfect
+			// (the same file may be accessed using various paths) it's the fastest method
+			// and far good enough.
+			CRC32 crc = new CRC32();
+			crc.update(path.getBytes());
+			Long songId = (Long)(2+crc.getValue())*-1; // must at least be -2 (-1 defines Song-Object to be empty)
+
+			// Build minimal fake-database entry for this file
+			Object[] objData = new Object[] { songId, path, "", "", "", 0, 0, 0, 0 };
+
+			if (title != null)
+				objData[2] = title;
+			if (album != null)
+				objData[3] = album;
+			if (artist != null)
+				objData[4] = artist;
+			if (duration != null)
+				objData[7] = Long.parseLong(duration, 10);
+
+			matrixCursor.addRow(objData);
+		}
+
+		return matrixCursor;
+	}
+
 }

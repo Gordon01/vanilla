@@ -178,7 +178,7 @@ public class MediaAdapter
 			mFields = new String[] { MediaStore.Audio.Albums.ARTIST, MediaStore.Audio.Albums.ALBUM };
 			// Why is there no artist_key column constant in the album MediaStore? The column does seem to exist.
 			mFieldKeys = new String[] { "artist_key", MediaStore.Audio.Albums.ALBUM_KEY };
-			mSongSort = "album_key,track";
+			mSongSort = MediaUtils.ALBUM_SORT;
 			mSortEntries = new int[] { R.string.name, R.string.artist_album, R.string.year, R.string.number_of_tracks, R.string.date_added };
 			mSortValues = new String[] { "album_key %1$s", "artist_key %1$s,album_key %1$s", "minyear %1$s,album_key %1$s", "numsongs %1$s,album_key %1$s", "_id %1$s" };
 			break;
@@ -187,9 +187,9 @@ public class MediaAdapter
 			mFields = new String[] { MediaStore.Audio.Media.ARTIST, MediaStore.Audio.Media.ALBUM, MediaStore.Audio.Media.TITLE };
 			mFieldKeys = new String[] { MediaStore.Audio.Media.ARTIST_KEY, MediaStore.Audio.Media.ALBUM_KEY, MediaStore.Audio.Media.TITLE_KEY };
 			mSortEntries = new int[] { R.string.name, R.string.artist_album_track, R.string.artist_album_title,
-			                           R.string.artist_year, R.string.year, R.string.date_added, R.string.song_playcount };
+			                           R.string.artist_year, R.string.album_track, R.string.year, R.string.date_added, R.string.song_playcount };
 			mSortValues = new String[] { "title_key %1$s", "artist_key %1$s,album_key %1$s,track %1$s", "artist_key %1$s,album_key %1$s,title_key %1$s",
-			                             "artist_key %1$s,year %1$s,track %1$s", "year %1$s,title_key %1$s", "_id %1$s", SORT_MAGIC_PLAYCOUNT };
+			                             "artist_key %1$s,year %1$s,track %1$s", "album_key %1$s,track %1s", "year %1$s,title_key %1$s", "_id %1$s", SORT_MAGIC_PLAYCOUNT };
 			break;
 		case MediaUtils.TYPE_PLAYLIST:
 			mStore = MediaStore.Audio.Playlists.EXTERNAL_CONTENT_URI;
@@ -243,7 +243,7 @@ public class MediaAdapter
 	 * @param forceMusicCheck Force the is_music check to be added to the
 	 * selection.
 	 */
-	public QueryTask buildQuery(String[] projection, boolean forceMusicCheck)
+	private QueryTask buildQuery(String[] projection, boolean forceMusicCheck)
 	{
 		String constraint = mConstraint;
 		Limiter limiter = mLimiter;

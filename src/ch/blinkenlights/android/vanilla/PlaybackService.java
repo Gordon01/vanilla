@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2014  Alexander Sergeev <etc9053@gmail.com>
- * Copyright (C) 2012-2013 Adrian Ulrich <adrian@blinkenlights.ch>
+ * Copyright (C) 2012-2014 Adrian Ulrich <adrian@blinkenlights.ch>
  * Copyright (C) 2010, 2011 Christopher Eby <kreed@kreed.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -266,6 +266,9 @@ public final class PlaybackService extends Service
 	 * The appplication-wide instance of the PlaybackService.
 	 */
 	public static PlaybackService sInstance;
+	/**
+	 * Static referenced-array to PlaybackActivities, used for callbacks
+	 */
 	private static final ArrayList<PlaybackActivity> sActivities = new ArrayList<PlaybackActivity>(5);
 	/**
 	 * Cached app-wide SharedPreferences instance.
@@ -293,10 +296,6 @@ public final class PlaybackService extends Service
 	 * {@link PlaybackService#createNotificationAction(SharedPreferences)}.
 	 */
 	private PendingIntent mNotificationAction;
-	/**
-	 * Use white text instead of black default text in notification.
-	 */
-	private boolean mInvertNotification;
 
 	private Looper mLooper;
 	private Handler mHandler;
@@ -422,7 +421,6 @@ public final class PlaybackService extends Service
 
 		mHeadsetOnly = settings.getBoolean(PrefKeys.HEADSET_ONLY, false);
 		mStockBroadcast = settings.getBoolean(PrefKeys.STOCK_BROADCAST, false);
-		mInvertNotification = settings.getBoolean(PrefKeys.NOTIFICATION_INVERTED_COLOR, false);
 		mNotificationAction = createNotificationAction(settings);
 		mHeadsetPause = getSettings(this).getBoolean(PrefKeys.HEADSET_PAUSE, true);
 		mShakeAction = settings.getBoolean(PrefKeys.ENABLE_SHAKE, false) ? Action.getAction(settings, PrefKeys.SHAKE_ACTION, Action.NextSong) : Action.Nothing;
@@ -446,7 +444,7 @@ public final class PlaybackService extends Service
 
 		getContentResolver().registerContentObserver(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, true, mObserver);
 
-		CompatIcs.registerRemote(this, mAudioManager);
+		RemoteControl.registerRemote(this, mAudioManager);
 
 		mLooper = thread.getLooper();
 		mHandler = new Handler(mLooper, this);
@@ -673,8 +671,7 @@ public final class PlaybackService extends Service
 	 * re-creates a newone if needed.
 	 */
 	private void triggerGaplessUpdate() {
-		// Log.d("VanillaMusic", "triggering gapless update");
-		
+
 		if(mMediaPlayerInitialized != true)
 			return;
 		
@@ -688,7 +685,6 @@ public final class PlaybackService extends Service
 			mMediaPlayer.setNextMediaPlayer(null);
 			mPreparedMediaPlayer.release();
 			mPreparedMediaPlayer = null;
-			// Log.d("VanillaMusic", "old prepared player destroyed");
 		}
 		
 		int fa = finishAction(mState);
@@ -701,7 +697,7 @@ public final class PlaybackService extends Service
 				mPreparedMediaPlayer = getNewMediaPlayer();
 				prepareMediaPlayer(mPreparedMediaPlayer, nextSong.path);
 				mMediaPlayer.setNextMediaPlayer(mPreparedMediaPlayer);
-				// Log.d("VanillaMusic", "New media player prepared as "+mPreparedMediaPlayer+" with path "+nextSong.path);
+				Log.d("VanillaMusic", "New media player prepared with path "+nextSong.path);
 			} catch (IOException e) {
 				Log.e("VanillaMusic", "IOException", e);
 			}
@@ -716,7 +712,7 @@ public final class PlaybackService extends Service
 	 */
 	private void triggerReadAhead() {
 		Song song = mCurrentSong;
-		if(mReadaheadEnabled && (mState & FLAG_PLAYING) != 0 && song != null) {
+		if((mState & FLAG_PLAYING) != 0 && song != null) {
 			mReadahead.setSource(song.path);
 		} else {
 			mReadahead.pause();
@@ -758,9 +754,6 @@ public final class PlaybackService extends Service
 		} else if (PrefKeys.NOTIFICATION_ACTION.equals(key)) {
 			mNotificationAction = createNotificationAction(settings);
 			updateNotification();
-		} else if (PrefKeys.NOTIFICATION_INVERTED_COLOR.equals(key)) {
-			mInvertNotification = settings.getBoolean(PrefKeys.NOTIFICATION_INVERTED_COLOR, false);
-			updateNotification();
 		} else if (PrefKeys.NOTIFICATION_MODE.equals(key)){
 			mNotificationMode = Integer.parseInt(settings.getString(PrefKeys.NOTIFICATION_MODE, "1"));
 			// This is the only way to remove a notification created by
@@ -784,8 +777,6 @@ public final class PlaybackService extends Service
 		} else if (PrefKeys.COVERLOADER_SHADOW.equals(key)) {
 			Song.mCoverLoadMode = settings.getBoolean(PrefKeys.COVERLOADER_SHADOW, true) ? Song.mCoverLoadMode | Song.COVER_MODE_SHADOW : Song.mCoverLoadMode & ~(Song.COVER_MODE_SHADOW);
 			Song.mFlushCoverCache = true;
-		} else if (PrefKeys.NOTIFICATION_INVERTED_COLOR.equals(key)) {
-			updateNotification();
 		} else if (PrefKeys.HEADSET_ONLY.equals(key)) {
 			mHeadsetOnly = settings.getBoolean(key, false);
 			if (mHeadsetOnly && isSpeakerOn())
@@ -885,7 +876,7 @@ public final class PlaybackService extends Service
 	{
 		int toggled = oldState ^ state;
 
-		if ((toggled & FLAG_PLAYING) != 0) {
+		if ( ((toggled & FLAG_PLAYING) != 0) && mCurrentSong != null) { // user requested to start playback AND we have a song selected
 			if ((state & FLAG_PLAYING) != 0) {
 				if (mMediaPlayerInitialized)
 					mMediaPlayer.start();
@@ -934,9 +925,6 @@ public final class PlaybackService extends Service
 			mTimeline.setShuffleMode(shuffleMode(state));
 		if ((toggled & MASK_FINISH) != 0)
 			mTimeline.setFinishAction(finishAction(state));
-		
-		triggerGaplessUpdate();
-		triggerReadAhead();
 	}
 
 	private void broadcastChange(int state, Song song, long uptime)
@@ -955,12 +943,16 @@ public final class PlaybackService extends Service
 
 		updateWidgets();
 
-		CompatIcs.updateRemote(this, mCurrentSong, mState);
+		if (mReadaheadEnabled)
+			triggerReadAhead();
+
+		RemoteControl.updateRemote(this, mCurrentSong, mState);
 
 		if (mStockBroadcast)
 			stockMusicBroadcast();
 		if (mScrobble)
 			scrobble();
+
 	}
 
 	/**
@@ -1211,10 +1203,13 @@ public final class PlaybackService extends Service
 				prepareMediaPlayer(mMediaPlayer, song.path);
 			}
 			
+
 			mMediaPlayerInitialized = true;
+
+			// Cancel any queued gapless triggers: we are updating it right now
+			mHandler.removeMessages(GAPLESS_UPDATE);
 			triggerGaplessUpdate();
-			triggerReadAhead();
-			
+
 			if (mPendingSeek != 0 && mPendingSeekSong == song.id) {
 				mMediaPlayer.seekTo(mPendingSeek);
 				mPendingSeek = 0;
@@ -1359,6 +1354,7 @@ public final class PlaybackService extends Service
 	private static final int PROCESS_SONG = 13;
 	private static final int PROCESS_STATE = 14;
 	private static final int SKIP_BROKEN_SONG = 15;
+	private static final int GAPLESS_UPDATE = 16;
 
 	@Override
 	public boolean handleMessage(Message message)
@@ -1416,6 +1412,9 @@ public final class PlaybackService extends Service
 				setCurrentSong(1);
 			}
 			mHandler.sendMessage(mHandler.obtainMessage(CALL_GO, 0, 0));
+			break;
+		case GAPLESS_UPDATE:
+			triggerGaplessUpdate();
 			break;
 		default:
 			return false;
@@ -1587,7 +1586,6 @@ public final class PlaybackService extends Service
 		}
 		
 		Toast.makeText(this, getResources().getQuantityString(text, count, count), Toast.LENGTH_SHORT).show();
-		triggerGaplessUpdate();
 	}
 
 	/**
@@ -1643,7 +1641,6 @@ public final class PlaybackService extends Service
 	public void clearQueue()
 	{
 		mTimeline.clearQueue();
-		triggerGaplessUpdate();
 	}
 
 	/**
@@ -1659,6 +1656,16 @@ public final class PlaybackService extends Service
 	{
 		mHandler.removeMessages(SAVE_STATE);
 		mHandler.sendEmptyMessageDelayed(SAVE_STATE, 5000);
+
+		// Trigger a gappless update for the new timeline
+		// This might get canceled if setCurrentSong() also fired a call
+		// to processSong();
+		mHandler.removeMessages(GAPLESS_UPDATE);
+		mHandler.sendEmptyMessageDelayed(GAPLESS_UPDATE, 350);
+
+		ArrayList<PlaybackActivity> list = sActivities;
+		for (int i = list.size(); --i != -1; )
+			list.get(i).onTimelineChanged();
 	}
 
 	@Override
@@ -1847,46 +1854,67 @@ public final class PlaybackService extends Service
 		boolean playing = (state & FLAG_PLAYING) != 0;
 
 		RemoteViews views = new RemoteViews(getPackageName(), R.layout.notification);
+		RemoteViews expanded = new RemoteViews(getPackageName(), R.layout.notification_expanded);
 
 		Bitmap cover = song.getCover(this);
 		if (cover == null) {
 			views.setImageViewResource(R.id.cover, R.drawable.fallback_cover);
+			expanded.setImageViewResource(R.id.cover, R.drawable.fallback_cover);
 		} else {
 			views.setImageViewBitmap(R.id.cover, cover);
+			expanded.setImageViewBitmap(R.id.cover, cover);
 		}
 
 		String title = song.title;
 
-		int playButton = playing ? R.drawable.pause : R.drawable.play;
+		int playButton = 0;
+		if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+			// Android >= 5.0 uses the dark version of this drawable
+			playButton = playing ? R.drawable.widget_pause : R.drawable.widget_play;
+		} else {
+			playButton = playing ? R.drawable.pause : R.drawable.play;
+		}
+
 		views.setImageViewResource(R.id.play_pause, playButton);
+		expanded.setImageViewResource(R.id.play_pause, playButton);
 
 		ComponentName service = new ComponentName(this, PlaybackService.class);
+
+		Intent previous = new Intent(PlaybackService.ACTION_PREVIOUS_SONG);
+		previous.setComponent(service);
+		expanded.setOnClickPendingIntent(R.id.previous, PendingIntent.getService(this, 0, previous, 0));
 
 		Intent playPause = new Intent(PlaybackService.ACTION_TOGGLE_PLAYBACK_NOTIFICATION);
 		playPause.setComponent(service);
 		views.setOnClickPendingIntent(R.id.play_pause, PendingIntent.getService(this, 0, playPause, 0));
+		expanded.setOnClickPendingIntent(R.id.play_pause, PendingIntent.getService(this, 0, playPause, 0));
 
 		Intent next = new Intent(PlaybackService.ACTION_NEXT_SONG);
 		next.setComponent(service);
 		views.setOnClickPendingIntent(R.id.next, PendingIntent.getService(this, 0, next, 0));
+		expanded.setOnClickPendingIntent(R.id.next, PendingIntent.getService(this, 0, next, 0));
 
 		Intent close = new Intent(PlaybackService.ACTION_CLOSE_NOTIFICATION);
 		close.setComponent(service);
 		views.setOnClickPendingIntent(R.id.close, PendingIntent.getService(this, 0, close, 0));
+		expanded.setOnClickPendingIntent(R.id.close, PendingIntent.getService(this, 0, close, 0));
 
 		views.setTextViewText(R.id.title, title);
 		views.setTextViewText(R.id.artist, song.artist);
-
-		if (mInvertNotification) {
-			views.setTextColor(R.id.title, 0xffffffff);
-			views.setTextColor(R.id.artist, 0xffffffff);
-		}
+		expanded.setTextViewText(R.id.title, title);
+		expanded.setTextViewText(R.id.album, song.album);
+		expanded.setTextViewText(R.id.artist, song.artist);
 
 		Notification notification = new Notification();
 		notification.contentView = views;
 		notification.icon = R.drawable.status_icon;
 		notification.flags |= Notification.FLAG_ONGOING_EVENT;
 		notification.contentIntent = mNotificationAction;
+		if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+			// expanded view is available since 4.1
+			notification.bigContentView = expanded;
+			notification.priority = 42;
+		}
 		return notification;
 	}
 
@@ -2059,5 +2087,23 @@ public final class PlaybackService extends Service
 		setCurrentSong(0);
 		play();
 	}
-	
+
+	/**
+	 * Moves a songs position in the queue
+	 *
+	 * @param from the index of the song to be moved
+	 * @param to the new index position of the song
+	 */
+	public void moveSongPosition(int from, int to) {
+		mTimeline.moveSongPosition(from, to);
+	}
+
+	/**
+	 * Removes a song from the queue
+	 * @param which index to remove
+	 */
+	public void removeSongPosition(int which) {
+		mTimeline.removeSongPosition(which);
+	}
+
 }

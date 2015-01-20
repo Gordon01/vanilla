@@ -29,12 +29,10 @@ import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Message;
 import android.text.format.DateUtils;
 import android.util.Log;
-import android.content.ContentResolver;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.Menu;
@@ -47,8 +45,9 @@ import android.widget.SeekBar;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
-import android.widget.Toast;
 import su.thinkdifferent.vanilla.R;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 
 /**
  * The primary playback screen with playback controls and large cover display.
@@ -360,6 +359,7 @@ public class FullPlaybackActivity extends PlaybackActivity
 	{
 		super.onCreateOptionsMenu(menu);
 		menu.add(0, MENU_CLEAR_QUEUE, 0, R.string.clear_queue).setIcon(R.drawable.ic_menu_close_clear_cancel);
+		menu.add(0, MENU_DELETE, 0, R.string.delete);
 		menu.add(0, MENU_ENQUEUE_ALBUM, 0, R.string.enqueue_current_album).setIcon(R.drawable.ic_menu_add);
 		menu.add(0, MENU_ENQUEUE_ARTIST, 0, R.string.enqueue_current_artist).setIcon(R.drawable.ic_menu_add);
 		menu.add(0, MENU_ENQUEUE_GENRE, 0, R.string.enqueue_current_genre).setIcon(R.drawable.ic_menu_add);
@@ -386,26 +386,44 @@ public class FullPlaybackActivity extends PlaybackActivity
 		case MENU_ENQUEUE_GENRE:
 			PlaybackService.get(this).enqueueFromCurrent(MediaUtils.TYPE_GENRE);
 			break;
-		case MENU_CLEAR_QUEUE:
-			PlaybackService.get(this).clearQueue();
-			break;
 		case MENU_SONG_FAVORITE:
-			PlaybackService psvc = PlaybackService.get(this);
-			ContentResolver resolver = getContentResolver();
-			String plName = getString(R.string.playlist_favorites);
-			long plId = Playlist.getOrCreatePlaylist(resolver, plName);
-			
-			if(psvc.getTimelineLength() > 0) {
-				int qpos = psvc.getTimelinePosition();
-				Song song = psvc.getSongByQueuePosition(qpos);
-				if(song != null) {
-					QueryTask query = MediaUtils.buildFileQuery(song.path, Song.EMPTY_PROJECTION);
-					int count = Playlist.addToPlaylist(resolver, plId, query);
-					String message = getResources().getQuantityString(R.plurals.added_to_playlist, count, count, plName);
-					Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
-				}
+			String playlistName = getString(R.string.playlist_favorites);
+			long playlistId = Playlist.getOrCreatePlaylist(getContentResolver(), playlistName);
+			Song song = (PlaybackService.get(this)).getSong(0);
+
+			if (song != null) {
+				PlaylistTask playlistTask = new PlaylistTask(playlistId, playlistName);
+				playlistTask.audioIds = new ArrayList<Long>();
+				playlistTask.audioIds.add(song.id);
+				mHandler.sendMessage(mHandler.obtainMessage(MSG_ADD_TO_PLAYLIST, playlistTask));
 			}
-			
+			break;
+		case MENU_DELETE:
+			final PlaybackService playbackService = PlaybackService.get(this);
+			final Song sng = playbackService.getSong(0);
+			final PlaybackActivity activity = this;
+
+			if (sng != null) {
+				String delete_message = getString(R.string.delete_file, sng.title);
+				AlertDialog.Builder dialog = new AlertDialog.Builder(this);
+				dialog.setTitle(R.string.delete);
+				dialog
+					.setMessage(delete_message)
+					.setPositiveButton(R.string.delete, new DialogInterface.OnClickListener() {
+						public void onClick(DialogInterface dialog, int id) {
+							// MSG_DELETE expects an intent (usually called from listview)
+							Intent intent = new Intent();
+							intent.putExtra(LibraryAdapter.DATA_TYPE, MediaUtils.TYPE_SONG);
+							intent.putExtra(LibraryAdapter.DATA_ID, sng.id);
+							mHandler.sendMessage(mHandler.obtainMessage(MSG_DELETE, intent));
+						}
+					})
+					.setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
+						public void onClick(DialogInterface dialog, int id) {
+						}
+					});
+				dialog.create().show();
+			}
 			break;
 		case MENU_SHOW_QUEUE:
 			startActivity(new Intent(this, ShowQueueActivity.class));
@@ -543,17 +561,17 @@ public class FullPlaybackActivity extends PlaybackActivity
 		mComposer = null;
 		mFormat = null;
 		mReplayGain = null;
-		
+
 		if(song != null) {
-			
+
 			MediaMetadataRetriever data = new MediaMetadataRetriever();
-			
+
 			try {
 				data.setDataSource(song.path);
 			} catch (Exception e) {
 				Log.w("VanillaMusic", "Failed to extract metadata from " + song.path);
 			}
-			
+
 			mGenre = data.extractMetadata(MediaMetadataRetriever.METADATA_KEY_GENRE);
 			mTrack = data.extractMetadata(MediaMetadataRetriever.METADATA_KEY_CD_TRACK_NUMBER);
 			String composer = data.extractMetadata(MediaMetadataRetriever.METADATA_KEY_COMPOSER);
@@ -580,12 +598,12 @@ public class FullPlaybackActivity extends PlaybackActivity
 				sb.append("kbps");
 			}
 			mFormat = sb.toString();
-			
+
 			if(song.path != null) { /* ICS bug? */
 				float[] rg = PlaybackService.get(this).getReplayGainValues(song.path);
 				mReplayGain = "track="+rg[0]+"dB, album="+rg[1]+"dB";
 			}
-			
+
 			data.release();
 		}
 

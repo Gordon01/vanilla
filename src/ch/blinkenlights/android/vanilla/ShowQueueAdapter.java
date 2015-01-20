@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013 Adrian Ulrich <adrian@blinkenlights.ch>
+ * Copyright (C) 2013-2014 Adrian Ulrich <adrian@blinkenlights.ch>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,51 +26,60 @@ import android.view.LayoutInflater;
 import android.widget.TextView;
 
 import android.graphics.Color;
-import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.style.ForegroundColorSpan;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import su.thinkdifferent.vanilla.R;
 
-public class ShowQueueAdapter extends ArrayAdapter<Song> {
+public class ShowQueueAdapter
+	extends ArrayAdapter<Song>
+	 {
 	
-	int resource;
-	Context context;
-	int hl_row;
-	
+	int mResource;
+	int mHighlightRow;
+	Context mContext;
+
 	public ShowQueueAdapter(Context context, int resource) {
 		super(context, resource);
-		this.resource = resource;
-		this.context = context;
-		this.hl_row = -1;
+		mResource = resource;
+		mContext = context;
+		mHighlightRow = -1;
 	}
-	
-	/*
-	** Tells the adapter to highlight a specific row id
-	** Set this to -1 to disable the feature
+
+	/**
+	* Tells the adapter to highlight a specific row id
+	* Set this to -1 to disable the feature
 	*/
 	public void highlightRow(int pos) {
-		this.hl_row = pos;
+		mHighlightRow = pos;
 	}
-	
+
+
 	@Override
 	public View getView(int position, View convertView, ViewGroup parent) {
-		LayoutInflater inflater = ((Activity)context).getLayoutInflater();
-		View row = inflater.inflate(resource, parent, false);
+		DraggableRow row;
+
+		if (convertView != null) {
+			row = (DraggableRow)convertView;
+		} else {
+			LayoutInflater inflater = ((Activity)mContext).getLayoutInflater();
+			row = (DraggableRow)inflater.inflate(mResource, parent, false);
+		}
+
 		Song song = getItem(position);
-		TextView target = ((TextView)row.findViewById(R.id.text));
-		SpannableStringBuilder sb = new SpannableStringBuilder(song.title);
-		sb.append('\n');
-		sb.append(song.album+", "+song.artist);
-		sb.setSpan(new ForegroundColorSpan(Color.GRAY), song.title.length() + 1, sb.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-		
-		target.setText(sb);
-		
-		View pmark = ((View)row.findViewById(R.id.playmark));
-		pmark.setVisibility( ( position == this.hl_row ? View.VISIBLE : View.INVISIBLE ));
-		
+
+		if (song != null) { // unlikely to fail but seems to happen in the wild.
+			SpannableStringBuilder sb = new SpannableStringBuilder(song.title);
+			sb.append('\n');
+			sb.append(song.album+", "+song.artist);
+			sb.setSpan(new ForegroundColorSpan(Color.GRAY), song.title.length() + 1, sb.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+			row.getTextView().setText(sb);
+		}
+
+		row.highlightRow(position == mHighlightRow);
+
 		return row;
 	}
-	
+
 }

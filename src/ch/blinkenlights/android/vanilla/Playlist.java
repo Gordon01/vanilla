@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2010 Christopher Eby <kreed@kreed.org>
+ * Copyright (C) 2014 Adrian Ulrich <adrian@blinkenlights.ch>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,6 +22,8 @@
  */
 
 package ch.blinkenlights.android.vanilla;
+
+import java.util.ArrayList;
 
 import android.content.ContentResolver;
 import android.content.ContentUris;
@@ -132,8 +135,28 @@ public class Playlist {
 	 * @param query The query to run. The audio id should be the first column.
 	 * @return The number of songs that were added to the playlist.
 	 */
-	public static int addToPlaylist(ContentResolver resolver, long playlistId, QueryTask query)
-	{
+	public static int addToPlaylist(ContentResolver resolver, long playlistId, QueryTask query) {
+		ArrayList<Long> result = new ArrayList<Long>();
+		Cursor cursor = query.runQuery(resolver);
+		if (cursor != null) {
+			while (cursor.moveToNext()) {
+				result.add(cursor.getLong(0));
+			}
+		}
+		return addToPlaylist(resolver, playlistId, result);
+	}
+
+	/**
+	 * Run the given query and add the results to the given playlist. Should be
+	 * run on a background thread.
+	 *
+	 * @param resolver A ContentResolver to use.
+	 * @param playlistId The MediaStore.Audio.Playlist id of the playlist to
+	 * modify.
+	 * @param audioIds An ArrayList with all IDs to add
+	 * @return The number of songs that were added to the playlist.
+	 */
+	public static int addToPlaylist(ContentResolver resolver, long playlistId, ArrayList<Long> audioIds) {
 		if (playlistId == -1)
 			return 0;
 
@@ -146,24 +169,17 @@ public class Playlist {
 			base = cursor.getInt(0) + 1;
 		cursor.close();
 
-		Cursor from = query.runQuery(resolver);
-		if (from == null)
-			return 0;
-
-		int count = from.getCount();
+		int count = audioIds.size();
 		if (count > 0) {
 			ContentValues[] values = new ContentValues[count];
 			for (int i = 0; i != count; ++i) {
-				from.moveToPosition(i);
 				ContentValues value = new ContentValues(2);
 				value.put(MediaStore.Audio.Playlists.Members.PLAY_ORDER, Integer.valueOf(base + i));
-				value.put(MediaStore.Audio.Playlists.Members.AUDIO_ID, from.getLong(0));
+				value.put(MediaStore.Audio.Playlists.Members.AUDIO_ID, audioIds.get(i));
 				values[i] = value;
 			}
 			resolver.bulkInsert(uri, values);
 		}
-
-		from.close();
 
 		return count;
 	}
@@ -181,6 +197,18 @@ public class Playlist {
 	}
 
 	/**
+	 * Copy content from one playlist to another
+	 *
+	 * @param resolver A ContentResolver to use.
+	 * @param sourceid The Media.Audio.Playlists id of the source playlist
+	 * @param destinationId The Media.Audio.Playlists id of the destination playlist
+	 */
+	private static void _copyToPlaylist(ContentResolver resolver, long sourceId, long destinationId) {
+		QueryTask query = MediaUtils.buildPlaylistQuery(sourceId, Song.FILLED_PLAYLIST_PROJECTION, null);
+		addToPlaylist(resolver, destinationId, query);
+	}
+
+	/**
 	 * Rename the playlist with the given id.
 	 *
 	 * @param resolver A ContentResolver to use.
@@ -189,16 +217,10 @@ public class Playlist {
 	 */
 	public static void renamePlaylist(ContentResolver resolver, long id, String newName)
 	{
-		long existingId = getPlaylist(resolver, newName);
-		// We are already called the requested name; nothing to do.
-		if (existingId == id)
-			return;
-		// There is already a playlist with this name. Kill it.
-		if (existingId != -1)
-			deletePlaylist(resolver, existingId);
-
-		ContentValues values = new ContentValues(1);
-		values.put(MediaStore.Audio.Playlists.NAME, newName);
-		resolver.update(MediaStore.Audio.Playlists.EXTERNAL_CONTENT_URI, values, "_id=" + id, null);
+		long newId = createPlaylist(resolver, newName);
+		if (newId != -1) { // new playlist created -> move stuff over
+			_copyToPlaylist(resolver, id, newId);
+			deletePlaylist(resolver, id);
+		}
 	}
 }
