@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013 Adrian Ulrich <adrian@blinkenlights.ch>
+ * Copyright (C) 2013-2014 Adrian Ulrich <adrian@blinkenlights.ch>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,22 +18,25 @@
 package ch.blinkenlights.android.vanilla;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import su.thinkdifferent.vanilla.R;
-import android.app.Activity;
+
+import android.content.DialogInterface;
 import android.os.Bundle;
 import android.view.View;
+import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.AdapterView.OnItemLongClickListener;
-import android.widget.ListView;
-import android.util.Log;
+import com.mobeta.android.dslv.DragSortListView;
 
-public class ShowQueueActivity extends Activity {
-	private ListView mListView;
+public class ShowQueueActivity extends PlaybackActivity
+	implements DialogInterface.OnDismissListener
+	{
+	private DragSortListView mListView;
 	private ShowQueueAdapter listAdapter;
-	
+	private PlaybackService mService;
+
 	@Override  
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -41,41 +44,61 @@ public class ShowQueueActivity extends Activity {
 		setTitle(R.string.queue);
 		setContentView(R.layout.showqueue_listview);
 		
-		
-		mListView   = (ListView) findViewById(R.id.list);
-		listAdapter = new ShowQueueAdapter(this, R.layout.showqueue_row);
+		mService    = PlaybackService.get(this);
+		mListView   = (DragSortListView) findViewById(R.id.list);
+		listAdapter = new ShowQueueAdapter(this, R.layout.draggable_row);
 		mListView.setAdapter(listAdapter);
 		mListView.setFastScrollAlwaysVisible(true);
+		mListView.setDropListener(onDrop);
+		mListView.setRemoveListener(onRemove);
 
 		mListView.setOnItemClickListener(new OnItemClickListener() {
 			@Override
 			public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-				jumpToSong(position);
+				mService.jumpToQueuePosition(position);
 				finish();
 			}});
 		mListView.setOnItemLongClickListener(new OnItemLongClickListener() {
 			@Override
 			public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-				jumpToSong(position);
-				/* This activity will stay open on longpress, so we have
-				 * to update the playmerker ourselfs */
-				listAdapter.highlightRow(position);
-				listAdapter.notifyDataSetChanged();
+				mService.jumpToQueuePosition(position);
 				return true;
 			}});
 
 	}
-	
-	/*
-	** Called when the user hits the ActionBar item
-	** There is only one item (title) and it should quit this activity
-	*/
+
+	/**
+	 * Inflate the ActionBar menu
+	 */
 	@Override
-	public boolean onOptionsItemSelected(MenuItem item) {
-		finish();
+	public boolean onCreateOptionsMenu(Menu menu) {
+		menu.add(0, MENU_CLEAR_QUEUE, 0, R.string.clear_queue).setIcon(R.drawable.ic_menu_close_clear_cancel);
+		menu.add(0, MENU_SAVE_AS_PLAYLIST, 0, R.string.save_as_playlist).setIcon(R.drawable.ic_menu_preferences);
 		return true;
 	}
-	
+
+	/**
+	 *  Called after the user selected an action from the ActionBar
+	 * 
+	 * @param item The selected menu item
+	 */
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		switch (item.getItemId()) {
+			case android.R.id.home:
+				finish();
+				break;
+			case MENU_SAVE_AS_PLAYLIST:
+				NewPlaylistDialog dialog = new NewPlaylistDialog(this, null, R.string.create, null);
+				dialog.setOnDismissListener(this);
+				dialog.show();
+				break;
+			default:
+				return super.onOptionsItemSelected(item);
+		}
+		return true;
+	}
+
 	/*
 	** Called when we are displayed (again)
 	** This will always refresh the whole song list
@@ -83,31 +106,90 @@ public class ShowQueueActivity extends Activity {
 	@Override
 	public void onResume() {
 		super.onResume();
-		refreshSongQueueList();
+		refreshSongQueueList(true);
 	}
-	
-	/*
-	** Tells the playback service to jump to a specific song
-	*/
-	private void jumpToSong(int id) {
-		PlaybackService service = PlaybackService.get(this);
-		service.jumpToQueuePosition(id);
-	}
-	
-	private void refreshSongQueueList() {
-		int i, stotal, spos;
-		PlaybackService service = PlaybackService.get(this);
-		
-		stotal = service.getTimelineLength();   /* Total number of songs in queue */
-		spos   = service.getTimelinePosition(); /* Current position in queue      */
-		
-		listAdapter.clear();                    /* Flush all existing entries...  */
-		listAdapter.highlightRow(spos);         /* and highlight current position */
-		
-		for(i=0 ; i<stotal; i++) {
-			listAdapter.add(service.getSongByQueuePosition(i));
+
+	/**
+	 * Fired from adapter listview  if user moved an item
+	 * @param from the item index that was dragged
+	 * @param to the index where the item was dropped
+	 */
+	private DragSortListView.DropListener onDrop =
+		new DragSortListView.DropListener() {
+			@Override
+			public void drop(int from, int to) {
+				if (from != to) {
+					mService.moveSongPosition(from, to);
+				}
+			}
+		};
+
+	/**
+	 * Fired from adapter listview after user removed a song
+	 * @param which index to remove from queue
+	 */
+	private DragSortListView.RemoveListener onRemove =
+		new DragSortListView.RemoveListener() {
+			@Override
+			public void remove(int which) {
+				mService.removeSongPosition(which);
+			}
+		};
+
+	/**
+	 * Fired if user dismisses the create-playlist dialog
+	 *
+	 * @param dialogInterface the dismissed interface dialog
+	 */
+	@Override
+	public void onDismiss(DialogInterface dialogInterface) {
+		NewPlaylistDialog dialog = (NewPlaylistDialog)dialogInterface;
+		if (dialog.isAccepted()) {
+			String playlistName = dialog.getText();
+			long playlistId = Playlist.createPlaylist(getContentResolver(), playlistName);
+			PlaylistTask playlistTask = new PlaylistTask(playlistId, playlistName);
+			playlistTask.audioIds = new ArrayList<Long>();
+
+			Song song;
+			for (int i=0; ; i++) {
+				song = mService.getSongByQueuePosition(i);
+				if (song == null)
+					break;
+				playlistTask.audioIds.add(song.id);
+			}
+			mHandler.sendMessage(mHandler.obtainMessage(MSG_ADD_TO_PLAYLIST, playlistTask));
 		}
-		mListView.setSelectionFromTop(spos, 0); /* scroll to currently playing song */
+	}
+
+	/**
+	 * Called when the song timeline has changed
+	 */
+	public void onTimelineChanged() {
+		refreshSongQueueList(false);
+	}
+
+	/**
+	 * Triggers a refresh of the queueview
+	 * @param scroll enable or disable jumping to the currently playing item
+	 */
+	public void refreshSongQueueList(final boolean scroll) {
+		runOnUiThread(new Runnable(){
+			public void run() {
+				int i, stotal, spos;
+				stotal = mService.getTimelineLength();   /* Total number of songs in queue */
+				spos   = mService.getTimelinePosition(); /* Current position in queue      */
+
+				listAdapter.clear();                    /* Flush all existing entries...  */
+				listAdapter.highlightRow(spos);         /* and highlight current position */
+
+				for(i=0 ; i<stotal; i++) {
+					listAdapter.add(mService.getSongByQueuePosition(i));
+				}
+
+				if (scroll == true)
+					mListView.setSelectionFromTop(spos, 0); /* scroll to currently playing song */
+			}
+		});
 	}
 	
 	

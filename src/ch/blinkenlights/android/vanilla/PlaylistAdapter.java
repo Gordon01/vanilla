@@ -24,10 +24,8 @@ package ch.blinkenlights.android.vanilla;
 
 import android.content.ContentResolver;
 import android.content.ContentUris;
-import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
-import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
@@ -39,11 +37,12 @@ import android.view.ViewGroup;
 import android.widget.CursorAdapter;
 import android.widget.TextView;
 import su.thinkdifferent.vanilla.R;
+import android.provider.MediaStore.Audio.Playlists.Members;
 
 /**
  * CursorAdapter backed by MediaStore playlists.
  */
-public class PlaylistAdapter extends CursorAdapter implements Handler.Callback, DragListView.DragAdapter {
+public class PlaylistAdapter extends CursorAdapter implements Handler.Callback {
 	private static final String[] PROJECTION = new String[] {
 		MediaStore.Audio.Playlists.Members._ID,
 		MediaStore.Audio.Playlists.Members.TITLE,
@@ -56,7 +55,6 @@ public class PlaylistAdapter extends CursorAdapter implements Handler.Callback, 
 	private final Handler mWorkerHandler;
 	private final Handler mUiHandler;
 	private final LayoutInflater mInflater;
-	private final Drawable mExpander;
 
 	private long mPlaylistId;
 
@@ -76,7 +74,6 @@ public class PlaylistAdapter extends CursorAdapter implements Handler.Callback, 
 		mUiHandler = new Handler(this);
 		mWorkerHandler = new Handler(worker, this);
 		mInflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-		mExpander = context.getResources().getDrawable(R.drawable.grabber);
 	}
 
 	/**
@@ -108,9 +105,10 @@ public class PlaylistAdapter extends CursorAdapter implements Handler.Callback, 
 	@Override
 	public void bindView(View view, Context context, Cursor cursor)
 	{
-		TextView textView = (TextView)view;
+		DraggableRow dview = (DraggableRow)view;
+		dview.showDragger(mEditable);
+		TextView textView = dview.getTextView();
 		textView.setText(cursor.getString(1));
-		textView.setCompoundDrawablesWithIntrinsicBounds(mEditable ? mExpander : null, null, null, null);
 		textView.setTag(cursor.getLong(3));
 	}
 
@@ -120,7 +118,7 @@ public class PlaylistAdapter extends CursorAdapter implements Handler.Callback, 
 	@Override
 	public View newView(Context context, Cursor cursor, ViewGroup parent)
 	{
-		return mInflater.inflate(R.layout.playlist_row, null);
+		return mInflater.inflate(R.layout.draggable_row, null);
 	}
 
 	/**
@@ -163,8 +161,21 @@ public class PlaylistAdapter extends CursorAdapter implements Handler.Callback, 
 		return query.runQuery(resolver);
 	}
 
-	@Override
-	public void move(int from, int to)
+	/**
+	 * Moves a song in the playlist
+	 * @param from original position of item
+	 * @param to destination of item
+	 **/
+	public void moveItem(int from, int to) {
+		if (from == to)
+			return;
+		android.provider.MediaStore.Audio.Playlists.Members.moveItem(mContext.getContentResolver(), mPlaylistId , from, to);
+		mUiHandler.sendEmptyMessage(MSG_RUN_QUERY);
+	}
+
+
+/* fixme: does the move-after-delete bug still exist in 4.x?
+	public void moveItem(int from, int to)
 	{
 		if (from == to)
 			// easy mode
@@ -216,13 +227,14 @@ public class PlaylistAdapter extends CursorAdapter implements Handler.Callback, 
 
 		changeCursor(runQuery(resolver));
 	}
-
-	@Override
-	public void remove(int position)
+*/
+	public void removeItem(int position)
 	{
 		ContentResolver resolver = mContext.getContentResolver();
 		Uri uri = MediaStore.Audio.Playlists.Members.getContentUri("external", mPlaylistId);
 		resolver.delete(ContentUris.withAppendedId(uri, getItemId(position)), null, null);
-		changeCursor(runQuery(resolver));
+		mUiHandler.sendEmptyMessage(MSG_RUN_QUERY);
 	}
+
+
 }

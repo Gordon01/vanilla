@@ -342,13 +342,21 @@ public final class SongTimeline {
 								cursor.moveToNext();
 							if (cursor.getLong(0) == e.id)
 								e.populate(cursor);
-							else
-								// We weren't able to query this song.
-								it.remove();
 						}
 					}
 
 					cursor.close();
+
+					// The query may have returned zero results or we might 
+					// have failed to populate some songs: Get rid of all
+					// uninitialized items (where path == null)
+					Iterator<Song> it = songs.iterator();
+					while (it.hasNext()) {
+						Song e = it.next();
+						if (e.path == null) {
+							it.remove();
+						}
+					}
 
 					// Revert to the order the songs were saved in.
 					Collections.sort(songs, new FlagComparator());
@@ -565,6 +573,7 @@ public final class SongTimeline {
 	public Song setCurrentQueuePosition(int pos) {
 		mCurrentPos = pos;
 		mShuffledSongs = null;
+		changed();
 		return getSong(0);
 	}
 	
@@ -572,7 +581,12 @@ public final class SongTimeline {
 	 * Returns 'Song' at given position in queue
 	*/
 	public Song getSongByQueuePosition(int id) {
-		return mSongs.get(id);
+		Song song = null;
+		synchronized (this) {
+			if (mSongs.size() > id)
+				song = mSongs.get(id);
+		}
+		return song;
 	}
 	
 	/**
@@ -617,14 +631,24 @@ public final class SongTimeline {
 			return 0;
 		}
 
-		int count = cursor.getCount();
-		if (count == 0) {
-			return 0;
-		}
-
 		int mode = query.mode;
 		int type = query.type;
 		long data = query.data;
+
+		int count = cursor.getCount();
+
+		if (count == 0 && type == MediaUtils.TYPE_FILE && query.selectionArgs.length == 1) {
+			String pathQuery = query.selectionArgs[0];
+			pathQuery = pathQuery.substring(0,pathQuery.length()-1); // remove '%' -> this used to be an sql query!
+			cursor.close(); // close old version
+			cursor = MediaUtils.getCursorForFileQuery(pathQuery);
+			count = cursor.getCount();
+		}
+
+		if (count == 0) {
+			cursor.close();
+			return 0;
+		}
 
 		ArrayList<Song> timeline = mSongs;
 		synchronized (this) {
@@ -687,6 +711,8 @@ public final class SongTimeline {
 					}
 				}
 			}
+
+			cursor.close();
 
 			if (mShuffleMode != SHUFFLE_NONE)
 				MediaUtils.shuffle(timeline.subList(start, timeline.size()), mShuffleMode == SHUFFLE_ALBUMS);
@@ -802,9 +828,66 @@ public final class SongTimeline {
 				}
 			}
 
+			if (getSong(1) == null)
+				mCurrentPos = 0;
+
 			broadcastChangedSongs();
 		}
 
+		changed();
+	}
+
+	/**
+	 * Removes song in timeline at given position
+	 * @param pos index to use
+	 */
+	public void removeSongPosition(int pos) {
+		synchronized (this) {
+			ArrayList<Song> songs = mSongs;
+
+			if (songs.size() <= pos) // may happen if we race with purge()
+				return;
+
+			saveActiveSongs();
+
+			songs.remove(pos);
+			if (pos < mCurrentPos)
+				mCurrentPos--;
+			if (getSong(1) == null) // wrap around if this was the last song
+				mCurrentPos = 0;
+
+			broadcastChangedSongs();
+		}
+		changed();
+	}
+
+	/**
+	 * Moves a song in the timeline to a new position
+	 * @param from index to move from
+	 * @param to index to move to
+	 */
+	public void moveSongPosition(int from, int to) {
+		synchronized (this) {
+			ArrayList<Song> songs = mSongs;
+
+			if (songs.size() <= from || songs.size() <= to) // may happen if we race with purge()
+				return;
+
+			saveActiveSongs();
+
+			Song tmp = songs.remove(from);
+			songs.add(to, tmp);
+
+			if (mCurrentPos == from) {
+				mCurrentPos = to; // active song was dragged to 'to'
+			} else if (from > mCurrentPos && to <= mCurrentPos) {
+				mCurrentPos++;
+			} else if (from < mCurrentPos && to >= mCurrentPos) {
+				mCurrentPos--;
+			}
+
+			broadcastChangedSongs();
+		}
 		changed();
 	}
 

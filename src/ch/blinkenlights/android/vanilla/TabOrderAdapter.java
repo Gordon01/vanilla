@@ -26,13 +26,14 @@ import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 import android.widget.BaseAdapter;
 import su.thinkdifferent.vanilla.R;
 
 /**
  * CursorAdapter backed by MediaStore playlists.
  */
-public class TabOrderAdapter extends BaseAdapter implements DragListView.DragAdapter {
+public class TabOrderAdapter extends BaseAdapter {
 	private final TabOrderActivity mActivity;
 	private final LayoutInflater mInflater;
 	private int[] mTabIds;
@@ -67,32 +68,6 @@ public class TabOrderAdapter extends BaseAdapter implements DragListView.DragAda
 	}
 
 	@Override
-	public void move(int from, int to)
-	{
-		if (from == to)
-			return;
-
-		int[] ids = mTabIds;
-		int tempId = ids[from];
-
-		if (from > to) {
-			System.arraycopy(ids, to, ids, to + 1, from - to);
-		} else {
-			System.arraycopy(ids, from + 1, ids, from, to - from);
-		}
-
-		ids[to] = tempId;
-		notifyDataSetChanged();
-		mActivity.save();
-	}
-
-	@Override
-	public void remove(int position)
-	{
-		// not implemented
-	}
-
-	@Override
 	public int getCount()
 	{
 		return LibraryPagerAdapter.MAX_ADAPTER_COUNT;
@@ -113,14 +88,15 @@ public class TabOrderAdapter extends BaseAdapter implements DragListView.DragAda
 	@Override
 	public View getView(int position, View convert, ViewGroup parent)
 	{
-		DragTextView text;
+		DraggableRow view;
 		if (convert == null) {
-			text = (DragTextView)mInflater.inflate(R.layout.tab_order_row, null);
+			view = (DraggableRow)mInflater.inflate(R.layout.draggable_row, null);
 		} else {
-			text = (DragTextView)convert;
+			view = (DraggableRow)convert;
 		}
-		text.setText(LibraryPagerAdapter.TITLES[mTabIds[position]]);
-		return text;
+		view.getTextView().setText(LibraryPagerAdapter.TITLES[mTabIds[position]]);
+		view.showCheckBox(true);
+		return view;
 	}
 
 	@Override

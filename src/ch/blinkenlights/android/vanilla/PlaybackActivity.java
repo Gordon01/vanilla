@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2010, 2011 Christopher Eby <kreed@kreed.org>
+ * Copyright (C) 2014 Adrian Ulrich <adrian@blinkenlights.ch>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,6 +29,7 @@ import su.thinkdifferent.vanilla.R;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.Resources;
 import android.media.AudioManager;
 import android.os.Bundle;
 import android.os.Handler;
@@ -284,7 +286,7 @@ public abstract class PlaybackActivity extends Activity
 			}
 		});
 	}
-	
+
 	/**
 	 * Called by FileSystem adapter to get the start folder
 	 * for browsing directories
@@ -295,7 +297,7 @@ public abstract class PlaybackActivity extends Activity
 		File fs_start = new File( folder.equals("") ? Environment.getExternalStorageDirectory().getAbsolutePath() : folder );
 		return fs_start;
 	}
-	
+
 	/**
 	 * Called by PlaybackService to update the current song.
 	 */
@@ -329,6 +331,13 @@ public abstract class PlaybackActivity extends Activity
 	{
 	}
 
+	/**
+	 * Called when the timeline change has changed.
+	 */
+	public void onTimelineChanged()
+	{
+	}
+
 	static final int MENU_SORT = 1;
 	static final int MENU_PREFS = 2;
 	static final int MENU_LIBRARY = 3;
@@ -341,6 +350,8 @@ public abstract class PlaybackActivity extends Activity
 	static final int MENU_SONG_FAVORITE = 12;
 	static final int MENU_SHOW_QUEUE = 13;
 	static final int MENU_SHARE = 14;
+	static final int MENU_SAVE_AS_PLAYLIST = 14;
+	static final int MENU_DELETE = 15;
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu)
@@ -355,17 +366,128 @@ public abstract class PlaybackActivity extends Activity
 		switch (item.getItemId()) {
 		case MENU_PREFS:
 			startActivity(new Intent(this, PreferencesActivity.class));
-			return true;
+			break;
+		case MENU_CLEAR_QUEUE:
+			PlaybackService.get(this).clearQueue();
+			break;
 		default:
 			return false;
 		}
+		return true;
 	}
 
+	/**
+	 * Call addToPlaylist with the results from a NewPlaylistDialog stored in
+	 * obj.
+	 */
+	protected static final int MSG_NEW_PLAYLIST = 0;
+	/**
+	 * Call renamePlaylist with the results from a NewPlaylistDialog stored in
+	 * obj.
+	 */
+	protected static final int MSG_RENAME_PLAYLIST = 1;
+	/**
+	 * Call addToPlaylist with data from the playlisttask object.
+	 */
+	protected static final int MSG_ADD_TO_PLAYLIST = 2;
+
+	protected static final int MSG_DELETE = 3;
+
 	@Override
-	public boolean handleMessage(Message msg)
+	public boolean handleMessage(Message message)
 	{
-		return false;
+		switch (message.what) {
+		case MSG_NEW_PLAYLIST: {
+			NewPlaylistDialog dialog = (NewPlaylistDialog)message.obj;
+			if (dialog.isAccepted()) {
+				String name = dialog.getText();
+				long playlistId = Playlist.createPlaylist(getContentResolver(), name);
+				PlaylistTask playlistTask = dialog.getPlaylistTask();
+				playlistTask.name = name;
+				playlistTask.playlistId = playlistId;
+				mHandler.sendMessage(mHandler.obtainMessage(MSG_ADD_TO_PLAYLIST, playlistTask));
+			}
+			break;
+		}
+		case MSG_ADD_TO_PLAYLIST: {
+			PlaylistTask playlistTask = (PlaylistTask)message.obj;
+			addToPlaylist(playlistTask);
+			break;
+		}
+		case MSG_RENAME_PLAYLIST: {
+			NewPlaylistDialog dialog = (NewPlaylistDialog)message.obj;
+			if (dialog.isAccepted()) {
+				long playlistId = dialog.getPlaylistTask().playlistId;
+				Playlist.renamePlaylist(getContentResolver(), playlistId, dialog.getText());
+			}
+			break;
+		}
+		case MSG_DELETE: {
+			delete((Intent)message.obj);
+			break;
+		}
+		default:
+			return false;
+		}
+		return true;
 	}
+
+	/**
+	 * Add a set of songs represented by the playlistTask to a playlist. Displays a
+	 * Toast notifying of success.
+	 *
+	 * @param playlistTask The pending PlaylistTask to execute
+	 */
+	protected void addToPlaylist(PlaylistTask playlistTask) {
+		int count = 0;
+
+		if (playlistTask.query != null) {
+			count += Playlist.addToPlaylist(getContentResolver(), playlistTask.playlistId, playlistTask.query);
+		}
+
+		if (playlistTask.audioIds != null) {
+			count += Playlist.addToPlaylist(getContentResolver(), playlistTask.playlistId, playlistTask.audioIds);
+		}
+
+		String message = getResources().getQuantityString(R.plurals.added_to_playlist, count, count, playlistTask.name);
+		Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+	}
+
+	/**
+	 * Delete the media represented by the given intent and show a Toast
+	 * informing the user of this.
+	 *
+	 * @param intent An intent created with
+	 * {@link LibraryAdapter#createData(View)}.
+	 */
+	private void delete(Intent intent)
+	{
+		int type = intent.getIntExtra("type", MediaUtils.TYPE_INVALID);
+		long id = intent.getLongExtra("id", LibraryAdapter.INVALID_ID);
+		String message = null;
+		Resources res = getResources();
+
+		if (type == MediaUtils.TYPE_FILE) {
+			String file = intent.getStringExtra("file");
+			boolean success = MediaUtils.deleteFile(new File(file));
+			if (!success) {
+				message = res.getString(R.string.delete_file_failed, file);
+			}
+		} else if (type == MediaUtils.TYPE_PLAYLIST) {
+			Playlist.deletePlaylist(getContentResolver(), id);
+		} else {
+			int count = PlaybackService.get(this).deleteMedia(type, id);
+			message = res.getQuantityString(R.plurals.deleted, count, count);
+		}
+
+		if (message == null) {
+			message = res.getString(R.string.deleted_item, intent.getStringExtra("title"));
+		}
+
+		Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+	}
+
+
 
 	/**
 	 * Cycle shuffle mode.
