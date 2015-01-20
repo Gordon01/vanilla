@@ -17,6 +17,7 @@
 
 package ch.blinkenlights.android.vanilla;
 
+import su.thinkdifferent.vanilla.R;
 import android.app.Activity;
 import android.content.Intent;
 import android.net.Uri;
@@ -25,7 +26,6 @@ import android.view.View;
 import android.view.Window;
 import android.widget.TextView;
 import android.widget.Button;
-
 
 public class AudioPickerActivity extends PlaybackActivity {
 
